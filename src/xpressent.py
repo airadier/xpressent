@@ -28,9 +28,18 @@ def set_videomode(fullscreen):
 def render_page(page_num, size):
     page = doc.get_page(page_num)
     page_w, page_h = page.get_size()
-    img = cairo.ImageSurface(cairo.FORMAT_RGB24,size[0],size[1])
+    ratio = page_w/page_h
+    if ratio >= 1.0:
+        dest_x = size[0]
+        dest_y = size[1] / ratio
+    else:
+        dest_y = size[1]
+        dest_x = size[1] * ratio   
+    scale_x = (size[0]*quality/100)/page_w
+    scale_y = (size[1]*quality/100)/page_h
+    img = cairo.ImageSurface(cairo.FORMAT_RGB24,size[0]*quality/100,size[1]*quality/100)
     context = cairo.Context(img)
-    context.scale(size[0]/page_w, size[1]/page_h)
+    context.scale(scale_x, scale_y)
     context.set_source_rgb(1.0, 1.0, 1.0)
     context.rectangle(0, 0, page_w, page_h)
     context.fill()
