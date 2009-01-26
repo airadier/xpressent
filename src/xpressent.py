@@ -26,6 +26,8 @@ if not os.path.exists(pdf_file):
 fullscreen = config.fullscreen
 quality = config.quality
 
+EVENT_HIDEMOUSE = pygame.USEREVENT + 1
+
 def set_videomode(fullscreen):
     return pygame.display.set_mode(
         pygame.display.list_modes()[0] if fullscreen else config.window_size,
@@ -196,13 +198,18 @@ def run():
             else:
                 print 'Key', event.key
 
-            pygame.event.clear()
+            pygame.event.clear(pygame.KEYUP)
 
         elif event.type == pygame.VIDEORESIZE:
             pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
             slide.refresh()
         elif event.type == pygame.MOUSEMOTION:
-            pass
+            pygame.mouse.set_visible(True)
+            pygame.time.set_timer(EVENT_HIDEMOUSE, 3000)
+        elif event.type == EVENT_HIDEMOUSE:
+            print "Oculta raton"
+            pygame.mouse.set_visible(False)
+            pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
         else:
             pass
             #print event
