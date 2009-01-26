@@ -81,15 +81,79 @@ class PDFManager(object):
         return pygame.image.load(f, 'img.png');
 
 
-def redraw(doc, page):
-   slide = doc.render_page(page, (screen.get_width(), screen.get_height()))
-   img2 = pygame.transform.smoothscale(slide, (screen.get_width(), screen.get_height()))
-   screen.blit(img2, (0,0))
-   pygame.display.flip()
+class SlideManager(object):
 
+    def __init__(self, pdf):
+        self.pdf = pdf
+        self.current_page = 0
+        self.direction = 1
+        self.slide_cache = []
+
+        self.update_display()
+
+    def move_to_page(self, page_number):
+        if page_number >= self.current_page:
+            self.direction = 1
+        else:
+            self.direction = -1
+        self.current_page = page_number
+        self.update_display()
+
+    def move_home(self):
+        return self.move_to_page(0)
+
+    def move_next_page(self):
+        if self.current_page < self.pdf.get_num_pages() - 1:
+            return self.move_to_page(self.current_page + 1)
+
+    def move_prev_page(self):
+        if self.current_page > 0:
+            return self.move_to_page(self.current_page - 1)
+
+    def move_end(self):
+        return self.move_to_page(self.pdf.get_num_pages() - 1)
+
+    def clear_cache(self):
+        self.slide_cache = []
+
+    def add_to_cache(self, page_number, slide):
+        self.slide_cache.append((page_number, slide))
+        if len(self.slide_cache) > config.cache_size:
+            del self.slide_cache[0]
+
+    def get_from_cache(self, page_number):
+        for elem in self.slide_cache:
+            page, slide = elem
+            if page == page_number:
+                self.slide_cache.remove(elem)
+                self.slide_cache.append(elem)
+                return slide
+
+        slide = self.pdf.render_page(
+            page_number,
+            (screen.get_width(), screen.get_height()))
+        slide = pygame.transform.smoothscale(slide,
+            (screen.get_width(), screen.get_height()))
+        self.add_to_cache(page_number, slide)
+        return slide
+
+    def update_display(self):
+        slide = self.get_from_cache(self.current_page)
+        screen.blit(slide, (0,0))
+        pygame.display.flip()
+
+        preload_page = self.current_page
+        for i in range(config.preload):
+            preload_page = preload_page + self.direction
+            if preload_page > 0 and preload_page < self.pdf.get_num_pages():
+                self.get_from_cache(preload_page)
+            else: break
+
+    def refresh(self):
+        self.clear_cache()
+        self.update_display()
 
 def run():
-    global current_page
     global screen
 
     pygame.init()
@@ -99,9 +163,7 @@ def run():
 
     fullscren = config.fullscreen
     doc = PDFManager(pdf_file)
-    current_page = 0
-
-    redraw(doc, current_page)
+    slide = SlideManager(doc)
 
     while True:
         event = pygame.event.wait()
@@ -115,26 +177,19 @@ def run():
                 #Toggle fullscreen
                 fullscreen = not fullscreen
                 set_videomode(fullscreen)
-                redraw(doc, current_page)
+                slide.refresh()
             elif event.key in (278, ):
                 #Home
-                current_page = 0
-                redraw(doc, current_page)
+                slide.move_home()
             elif event.key in (279, ):
                 #End
-                current_page = doc.get_num_pages() - 1
-                redraw(doc, current_page)
+                slide.move_end()
             elif event.key in (281,275):
                 #Next page
-                current_page = current_page + 1
-                if current_page >= doc.get_num_pages(): current_page = doc.get_num_pages()-1
-                redraw(doc, current_page)
+                slide.move_next_page()
             elif event.key in (280,276):
                 #Previous page
-                slide = None
-                current_page = current_page - 1
-                if current_page < 0: current_page = 0
-                redraw(doc, current_page)
+                slide.move_prev_page()
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
@@ -145,7 +200,7 @@ def run():
 
         elif event.type == pygame.VIDEORESIZE:
             pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
-            redraw(doc, current_page)
+            slide.refresh()
         elif event.type == pygame.MOUSEMOTION:
             pass
         else:
