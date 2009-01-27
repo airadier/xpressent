@@ -14,9 +14,19 @@ SECTION_SLIDESHOW = 'slideshow'
 OPTION_PRELOAD = 'preload'
 OPTION_CACHE_SIZE = 'cache_size'
 
-
 conf_file = SafeConfigParser()
 conf_file.read(CONFIG_FILE)
+
+
+def get(section, option, default=None):
+    if not conf_file.has_section(section):
+        conf_file.add_section(section)
+    if not conf_file.has_option(section, option):
+        conf_file.set(section, option, default)
+    return conf_file.get(section, option)
+
+def getbool(section, option, default=None):
+	return get(section, option, default).lower() in ('true', '1', 'enable' , 'yes')
 
 if not conf_file.has_section(SECTION_DISPLAY):
     conf_file.add_section(SECTION_DISPLAY)

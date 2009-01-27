@@ -8,6 +8,10 @@ import cStringIO
 import sys
 import os
 import config
+import remotes
+import plugins
+
+from events import *
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
@@ -25,8 +29,6 @@ if not os.path.exists(pdf_file):
 
 fullscreen = config.fullscreen
 quality = config.quality
-
-EVENT_HIDEMOUSE = pygame.USEREVENT + 1
 
 def set_videomode(fullscreen):
     return pygame.display.set_mode(
