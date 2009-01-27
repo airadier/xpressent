@@ -51,8 +51,6 @@ class SlideManager(object):
         if page_number < 0 or page_number >= self.pdf.get_num_pages():
             return None
             
-        print "Loading page", page_number
-        
         for elem in self.slide_cache:
             page, slide = elem
             if page == page_number:
@@ -99,6 +97,7 @@ class SlidePreloader(Thread):
         else:
             slides = range(self.first_slide, self.last_slide - 1, -1)
         for page in slides:
-            print "Preloading", page
+            print "Preloading", page,"...",
             self.manager.get_from_cache(page)
+            print "done"
  
