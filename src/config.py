@@ -1,4 +1,7 @@
 from ConfigParser import SafeConfigParser
+from user import home
+import os
+import sys
 
 
 CONFIG_FILE = 'xpressent.conf'
@@ -15,18 +18,23 @@ OPTION_PRELOAD = 'preload'
 OPTION_CACHE_SIZE = 'cache_size'
 
 conf_file = SafeConfigParser()
-conf_file.read(CONFIG_FILE)
+for config_path in (
+    os.path.join(home, '.xpressent', CONFIG_FILE),
+    os.path.join('/etc', CONFIG_FILE),
+    os.path.join(sys.modules[__name__].file, CONFIG_FILE)):
+    
+    if os.path.exists(config_path): conf_file.read(CONFIG_FILE)
 
 
 def get(section, option, default=None):
     if not conf_file.has_section(section):
         conf_file.add_section(section)
     if not conf_file.has_option(section, option):
-        conf_file.set(section, option, default)
+        conf_file.set(section, option, str(default))
     return conf_file.get(section, option)
 
 def getbool(section, option, default=None):
-	return get(section, option, default).lower() in ('true', '1', 'enable' , 'yes')
+    return get(section, option, default).lower() in ('true', '1', 'enable' , 'yes')
 
 if not conf_file.has_section(SECTION_DISPLAY):
     conf_file.add_section(SECTION_DISPLAY)
