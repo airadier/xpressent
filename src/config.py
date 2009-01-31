@@ -2,6 +2,7 @@ from ConfigParser import SafeConfigParser
 from user import home
 import os
 import sys
+import inspect
 
 
 CONFIG_FILE = 'xpressent.conf'
@@ -18,11 +19,13 @@ OPTION_PRELOAD = 'preload'
 OPTION_CACHE_SIZE = 'cache_size'
 
 conf_file = SafeConfigParser()
+module_path = os.path.dirname(inspect.getabsfile(sys.modules[__name__]))
+
 for config_path in (
-    os.path.join(home, '.xpressent', CONFIG_FILE),
+    os.path.join(home, '.xpressent', 'xpressent.conf', CONFIG_FILE),
     os.path.join('/etc', CONFIG_FILE),
-    os.path.join(sys.modules[__name__].file, CONFIG_FILE)):
-    
+    os.path.join(module_path, CONFIG_FILE)):
+
     if os.path.exists(config_path): conf_file.read(CONFIG_FILE)
 
 
