@@ -34,7 +34,7 @@ class Screen(object):
     
     def __init__(self, fullscreen, window_size):
         self.window_size = window_size
-        self.lock = threading.Lock() 
+        self.lock = threading.RLock() 
 
         self.surface = self.set_videomode(fullscreen, window_size)
     
@@ -72,6 +72,12 @@ class Screen(object):
         pygame.display.flip()
         self.lock.release()
 
+
+    def acquire(self):
+        self.lock.acquire()
+       
+    def release(self):
+        self.lock.release()
 
 def run():
 
