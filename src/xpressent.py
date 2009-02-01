@@ -6,6 +6,7 @@ import os
 import config
 import remotes
 import plugins
+import threading
 
 from pdfmanager import *
 from slidemanager import *
@@ -26,25 +27,63 @@ if not os.path.exists(pdf_file):
     print
     sys.exit(-1)
 
-fullscreen = config.fullscreen
 quality = config.quality
 
-def set_videomode(fullscreen, window_size):
-    return pygame.display.set_mode(
-        pygame.display.list_modes()[0] if fullscreen else window_size,
-        pygame.RESIZABLE | (pygame.FULLSCREEN if fullscreen else False))
+class Screen(object):
+    
+    
+    def __init__(self, fullscreen, window_size):
+        self.window_size = window_size
+        self.lock = threading.Lock() 
+
+        self.surface = self.set_videomode(fullscreen, window_size)
+    
+    def set_videomode(self,fullscreen, window_size):
+        self.lock.acquire()
+        surface = pygame.display.set_mode(
+            pygame.display.list_modes()[0] if fullscreen else window_size,
+            pygame.RESIZABLE | (pygame.FULLSCREEN if fullscreen else False))
+        self.lock.release()
+        return surface
+
+
+    def set_fullscreen(self, fullscreen):
+        self.set_videomode(fullscreen, self.window_size)
+        
+    def change_size(self, size):
+        self.window_size = size
+        self.lock.acquire()
+        pygame.display.set_mode(size, pygame.RESIZABLE)
+        self.lock.release()
+
+    def get_size(self):
+        self.lock.acquire()
+        size = (self.surface.get_width(), self.surface.get_height())
+        self.lock.release()
+        return size
+
+    def blit(self, source, position):
+        self.lock.acquire()
+        self.surface.blit(source, position)
+        self.lock.release()
+        
+    def flip(self):
+        self.lock.acquire()
+        pygame.display.flip()
+        self.lock.release()
 
 
 def run():
-    global screen
 
     pygame.init()
     window_size = config.window_size
-    screen = set_videomode(config.fullscreen, window_size)
+    
+    fullscreen = config.fullscreen
+    screen = Screen(fullscreen, window_size)
+
     pygame.display.set_caption('xPressent')
     pygame.mouse.set_visible(False)
 
-    fullscren = config.fullscreen
     try:
         doc = PDFManager(pdf_file, quality)
     except Exception, ex:
@@ -61,10 +100,9 @@ def run():
             pass
         elif event.type == pygame.KEYUP:
             if event.key == 102: #F key
-                global fullscreen
                 #Toggle fullscreen
                 fullscreen = not fullscreen
-                set_videomode(fullscreen, window_size)
+                screen.set_fullscreen(fullscreen)
                 slide.refresh()
             elif event.key in (278, ):
                 #Home
@@ -84,11 +122,10 @@ def run():
             else:
                 print 'Key', event.key
 
-            pygame.event.clear(pygame.KEYUP)
+            #pygame.event.clear(pygame.KEYUP)
 
         elif event.type == pygame.VIDEORESIZE:
-            window_size = event.w, event.h
-            pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+            screen.change_size((event.w, event.h))
             slide.refresh()
         elif event.type == pygame.MOUSEMOTION:
             pygame.mouse.set_visible(True)

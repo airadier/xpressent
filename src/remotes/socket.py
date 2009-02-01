@@ -6,7 +6,7 @@ import time
 
 if config.getbool('remote:socket',  'enabled'):
     print "Enabling remote"
-    
+
 class SocketRemote(Thread):   
    
    def __init__ (self):
@@ -16,7 +16,7 @@ class SocketRemote(Thread):
    
    def run(self):
        while True:
-           print "Voy"
+           #print "Voy"
            time.sleep(3)
 
 remote = SocketRemote()
