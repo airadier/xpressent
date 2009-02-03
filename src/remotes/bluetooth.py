@@ -5,12 +5,13 @@ import pygame
 from pygame.event import Event
 import time
 
-if config.getbool('remote:socket',  'enabled'):
-    print "Enabling socket remote"
-    remote = SocketRemote()
+if config.getbool('remote:bluetooth',  'enabled'):
+    print "Enabling bluetooth remote"
+    remote = BluetoothRemote()
     remote.start()
 
-class SocketRemote(Thread):   
+
+class BluetoothRemote(Thread):   
    
    def __init__ (self):
     Thread.__init__(self)
@@ -20,7 +21,7 @@ class SocketRemote(Thread):
    def run(self):
        while True:
            time.sleep(3)
-           print "Voy"
+           print "Voy bluetooth"
            pygame.event.post(Event(pygame.KEYUP, key=281, mod=None))
 
 
