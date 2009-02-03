@@ -1,7 +1,8 @@
 import config
 from threading import Thread
 from plugins import IPlugin
-from events import *
+import pygame
+from pygame.event import Event
 import time
 
 if config.getbool('remote:socket',  'enabled'):
@@ -16,8 +17,9 @@ class SocketRemote(Thread):
    
    def run(self):
        while True:
-           #print "Voy"
            time.sleep(3)
+           print "Voy"
+           pygame.event.post(Event(pygame.KEYUP, key=281, mod=None))
 
 remote = SocketRemote()
 remote.start()
