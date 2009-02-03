@@ -1,6 +1,7 @@
 import pygame
 import config
 from threading import Thread, Lock
+from datetime import datetime
 
 class SlideManager(object):
 
@@ -76,7 +77,7 @@ class SlideManager(object):
         self.cache_lock.release()
         if no_render: return None
 
-	self.screen.acquire()
+        self.screen.acquire()
         size = self.screen.get_size()
         slide = self.pdf.render_page(page_number, size)
         slide = pygame.transform.smoothscale(slide, size)

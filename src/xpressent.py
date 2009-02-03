@@ -7,6 +7,7 @@ import config
 import remotes
 import plugins
 import threading
+from datetime import datetime
 
 from pdfmanager import *
 from slidemanager import *
@@ -34,16 +35,19 @@ class Screen(object):
     
     def __init__(self, fullscreen, window_size):
         self.window_size = window_size
-        self.lock = threading.RLock() 
+        self.size_lock = threading.RLock() 
+        self.blit_lock = threading.Lock()
 
         self.surface = self.set_videomode(fullscreen, window_size)
     
     def set_videomode(self,fullscreen, window_size):
-        self.lock.acquire()
+        self.size_lock.acquire()
+        self.blit_lock.acquire()
         surface = pygame.display.set_mode(
             pygame.display.list_modes()[0] if fullscreen else window_size,
-            pygame.RESIZABLE | (pygame.FULLSCREEN if fullscreen else False))
-        self.lock.release()
+            pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE | (pygame.FULLSCREEN if fullscreen else False))
+        self.blit_lock.release()
+        self.size_lock.release()
         return surface
 
 
@@ -52,32 +56,32 @@ class Screen(object):
         
     def change_size(self, size):
         self.window_size = size
-        self.lock.acquire()
-        pygame.display.set_mode(size, pygame.RESIZABLE)
-        self.lock.release()
+        self.size_lock.acquire()
+        self.blit_lock.acquire()
+        pygame.display.set_mode(size, pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE)
+        self.blit_lock.release()
+        self.size_lock.release()
 
     def get_size(self):
-        self.lock.acquire()
         size = (self.surface.get_width(), self.surface.get_height())
-        self.lock.release()
         return size
 
     def blit(self, source, position):
-        self.lock.acquire()
+        self.blit_lock.acquire()
         self.surface.blit(source, position)
-        self.lock.release()
+        self.blit_lock.release()
         
     def flip(self):
-        self.lock.acquire()
+        self.blit_lock.acquire()
         pygame.display.flip()
-        self.lock.release()
+        self.blit_lock.release()
 
 
     def acquire(self):
-        self.lock.acquire()
+        self.size_lock.acquire()
        
     def release(self):
-        self.lock.release()
+        self.size_lock.release()
 
 def run():
 
@@ -137,7 +141,6 @@ def run():
             pygame.mouse.set_visible(True)
             pygame.time.set_timer(EVENT_HIDEMOUSE, 3000)
         elif event.type == EVENT_HIDEMOUSE:
-            print "Oculta raton"
             pygame.mouse.set_visible(False)
             pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
         else:
