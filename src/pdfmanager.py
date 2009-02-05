@@ -1,20 +1,35 @@
-import poppler
 import config
-import cairo
 import cStringIO
 import pygame
 
-class PDFManager(object):
+import sys
+import os
+import inspect
+from subprocess import Popen, PIPE
+
+class PDFManagerBase(object):
+    def __init__(self, pdf_file, quality):
+        self.file = pdf_file
+        self.set_quality(quality)
+
+    def get_num_pages(self):
+        return 0
+
+    def set_quality(self, quality):
+        self.quality = quality
+
+    def render_page(self, page_num, size):
+        return None
+
+class PopplerPDFManager(PDFManagerBase):
 
     def __init__(self, pdf_file, quality):
+        PDFManagerBase.__init__(self, pdf_file, quality)
         self.doc = poppler.document_new_from_file('file://%s' % pdf_file, None)
-        self.set_quality(quality)
 
     def get_num_pages(self):
         return self.doc.get_n_pages()
         
-    def set_quality(self, quality):
-        self.quality = quality
 
     def render_page(self, page_num, size):
 
@@ -51,3 +66,52 @@ class PDFManager(object):
         img.write_to_png(f)
         f.seek(0)
         return pygame.image.load(f, 'img.png');
+        
+
+class XPDFManager(PDFManagerBase):
+    
+    def __init__(self, pdf_file, quality):
+        PDFManagerBase.__init__(self, pdf_file, quality)
+        
+        if os.path.isabs(config.xpdfpath):
+            self.xpdfpath = config.xpdfpath
+        else:
+            self.xpdfpath = os.path.join(
+                os.path.dirname(inspect.getabsfile(sys.modules[__name__])),
+                config.xpdfpath)
+        
+        self.pdfinfoexe = os.path.join(self.xpdfpath, 'pdfinfo')
+        self.pdftoppmexe = os.path.join(self.xpdfpath, 'pdftoppm')
+        
+        pipe = Popen("%s %s" % (self.pdfinfoexe, pdf_file),
+            stdout=PIPE, stderr=PIPE, universal_newlines = True)
+        pipe.wait()
+        info_lines = pipe.stdout.read().splitlines()
+        self.pdf_info = {}
+        for line in info_lines:
+            key = line[:line.find(':')]
+            self.pdf_info[key] = line[line.find(':') + 1:].lstrip()
+        print "Info: ", self.pdf_info
+
+    def get_num_pages(self):
+        return int(self.pdf_info['Pages'])
+    
+    def render_page(self, page_num, size):
+        #Resolución:
+        #72 es a R como..
+        #page_x es a size[0]
+        #pdftoppm -r 'R' (resolución)
+        return None
+    
+
+PDFManager = None
+if config.pdflib == 'poppler':
+    try:
+        import poppler
+        import cairo
+        PDFManager = PopplerPDFManager
+    except ImportError:
+        print "poppler or cairo libraries missing, using XPDF"
+
+if not PDFManager:
+    PDFManager = XPDFManager

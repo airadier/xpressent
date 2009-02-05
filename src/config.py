@@ -9,6 +9,7 @@ CONFIG_FILE = 'xpressent.conf'
 
 SECTION_DISPLAY = 'display'
 
+OPTION_PDFLIB = 'pdflib'
 OPTION_FULLSCREEN = 'fullscreen'
 OPTION_KEEP_ASPECT = 'keep_aspect'
 OPTION_QUALITY = 'quality'
@@ -17,6 +18,9 @@ SECTION_SLIDESHOW = 'slideshow'
 
 OPTION_PRELOAD = 'preload'
 OPTION_CACHE_SIZE = 'cache_size'
+
+SECTION_XPDF = 'xpdf'
+OPTION_XPDFPATH = 'xpdfpath'
 
 conf_file = SafeConfigParser()
 module_path = os.path.dirname(inspect.getabsfile(sys.modules[__name__]))
@@ -42,6 +46,11 @@ def getbool(section, option, default=None):
 if not conf_file.has_section(SECTION_DISPLAY):
     conf_file.add_section(SECTION_DISPLAY)
 
+if not conf_file.has_option(SECTION_DISPLAY, OPTION_PDFLIB):
+    conf_file.set(SECTION_DISPLAY, OPTION_PDFLIB, 'poppler')
+pdflib = conf_file.get(SECTION_DISPLAY, OPTION_PDFLIB)
+
+
 if not conf_file.has_option(SECTION_DISPLAY, OPTION_FULLSCREEN):
     conf_file.set(SECTION_DISPLAY, OPTION_FULLSCREEN, repr(False))
 fullscreen = conf_file.getboolean(SECTION_DISPLAY, OPTION_FULLSCREEN)
@@ -64,5 +73,12 @@ preload = conf_file.getint(SECTION_SLIDESHOW, OPTION_PRELOAD)
 if not conf_file.has_option(SECTION_SLIDESHOW, OPTION_CACHE_SIZE):
     conf_file.set(SECTION_SLIDESHOW, OPTION_CACHE_SIZE, repr(5))
 cache_size = conf_file.getint(SECTION_SLIDESHOW, OPTION_CACHE_SIZE)
+
+if not conf_file.has_section(SECTION_XPDF):
+    conf_file.add_section(SECTION_XPDF)
+
+if not conf_file.has_option(SECTION_XPDF, OPTION_XPDFPATH):
+    conf_file.set(SECTION_XPDF, OPTION_XPDFPATH, 'xpdf')
+xpdfpath = conf_file.get(SECTION_XPDF, OPTION_XPDFPATH)
 
 window_size = (400,240)
