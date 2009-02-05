@@ -1,3 +1,3 @@
-from socket import *
-from bluetooth import *
+from socketremote import *
+from btremote import *
 

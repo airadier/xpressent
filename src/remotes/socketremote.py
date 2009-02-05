@@ -5,11 +5,6 @@ import pygame
 from pygame.event import Event
 import time
 
-if config.getbool('remote:socket',  'enabled'):
-    print "Enabling socket remote"
-    remote = SocketRemote()
-    remote.start()
-
 class SocketRemote(Thread):   
    
    def __init__ (self):
@@ -24,3 +19,7 @@ class SocketRemote(Thread):
            pygame.event.post(Event(pygame.KEYUP, key=281, mod=None))
 
 
+if config.getbool('remote:socket',  'enabled'):
+    print "Enabling socket remote"
+    remote = SocketRemote()
+    remote.start()
