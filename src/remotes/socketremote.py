@@ -9,7 +9,7 @@ class SocketRemote(Thread):
    
    def __init__ (self):
     Thread.__init__(self)
-    self.setDaemon(True)
+    self.daemon = True
     self._socket = None
    
    def run(self):

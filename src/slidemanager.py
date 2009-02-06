@@ -101,6 +101,7 @@ class SlideManager(object):
         if page == self.current_page and not self.refresh_pending:
             self.screen.acquire()
             size = self.screen.get_size()
+            self.screen.clear()
             self.screen.blit(slide, ((size[0] - slide.get_width()) / 2, (size[1] - slide.get_height()) / 2))
             self.screen.flip()
             self.screen.release()

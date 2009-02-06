@@ -66,6 +66,9 @@ class Screen(object):
         size = (self.surface.get_width(), self.surface.get_height())
         return size
 
+    def clear(self):
+        self.surface.fill((0,0,0))
+
     def blit(self, source, position):
         self.blit_lock.acquire()
         self.surface.blit(source, position)
