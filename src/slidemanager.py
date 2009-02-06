@@ -99,8 +99,11 @@ class SlideManager(object):
     def notify_load_finished(self, slide, page):
         #If user didn't change the current page, paint it
         if page == self.current_page and not self.refresh_pending:
-            self.screen.blit(slide, (0,0))
+            self.screen.acquire()
+            size = self.screen.get_size()
+            self.screen.blit(slide, ((size[0] - slide.get_width()) / 2, (size[1] - slide.get_height()) / 2))
             self.screen.flip()
+            self.screen.release()
             return True
         else:
             self.thread_lock.acquire()

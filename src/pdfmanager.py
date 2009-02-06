@@ -29,7 +29,7 @@ class PDFManagerBase(object):
         else:
             dest_w, dest_h = render_w, render_h
         
-        return dest_w, dest_h
+        return int(dest_w), int(dest_h)
 
     def get_num_pages(self):
         return 0
