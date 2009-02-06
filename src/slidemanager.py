@@ -80,7 +80,7 @@ class SlideManager(object):
         self.screen.acquire()
         size = self.screen.get_size()
         slide = self.pdf.render_page(page_number, size)
-        slide = pygame.transform.smoothscale(slide, size)
+        #slide = pygame.transform.smoothscale(slide, size)
         self.add_to_cache(page_number, slide)
         self.screen.release()
 
@@ -143,7 +143,7 @@ class SlideLoader(Thread):
         self.manager = manager
         self.first_slide = first_slide
         self.last_slide = last_slide
-        self.daemon = True
+        self.daemon = False
         self.running = True
        
     def stop(self):

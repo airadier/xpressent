@@ -12,6 +12,25 @@ class PDFManagerBase(object):
         self.file = pdf_file
         self.set_quality(quality)
 
+    def get_render_size(self, screen_size, page_size):
+        render_w = int(screen_size[0] * self.quality)
+        render_h = int(screen_size[1] * self.quality)
+
+        if config.keep_aspect:
+            #Calculate and compare
+            page_ratio = float(page_size[0]) / float(page_size[1])
+            screen_ratio = float(screen_size[0]) / float(screen_size[1])
+            if page_ratio >= screen_ratio:
+                dest_w = render_w
+                dest_h = render_w / page_ratio
+            else:
+                dest_h = render_h
+                dest_w = render_h * page_ratio
+        else:
+            dest_w, dest_h = render_w, render_h
+        
+        return dest_w, dest_h
+
     def get_num_pages(self):
         return 0
 
@@ -20,6 +39,7 @@ class PDFManagerBase(object):
 
     def render_page(self, page_num, size):
         return None
+        
 
 class PopplerPDFManager(PDFManagerBase):
 
@@ -35,28 +55,14 @@ class PopplerPDFManager(PDFManagerBase):
 
         page = self.doc.get_page(page_num)
         page_w, page_h = page.get_size()
+        
+        dest_w, dest_h = self.get_render_size(size, (page_w, page_h))        
 
-        render_w = int(size[0] * self.quality)
-        render_h = int(size[1] * self.quality)
-
-        if config.keep_aspect:
-            #Calculate and compare
-            page_ratio = float(page_w) / float(page_h)
-            screen_ratio = float(size[0]) / float(size[1])
-            if page_ratio >= screen_ratio:
-                dest_w = render_w
-                dest_h = render_w / page_ratio
-            else:
-                dest_h = render_h
-                dest_w = render_h * page_ratio
-        else:
-            dest_w, dest_h = render_w, render_h
-
-        img = cairo.ImageSurface(cairo.FORMAT_RGB24, render_w, render_h)
+        img = cairo.ImageSurface(cairo.FORMAT_RGB24, dest_w, dest_h)
         context = cairo.Context(img)
-        context.translate(
-            int((render_w - dest_w)/2),
-            int((render_h - dest_h)/2))
+        #context.translate(
+        #    int((render_w - dest_w)/2),
+        #    int((render_h - dest_h)/2))
         context.scale(dest_w/page_w, dest_h/page_h)
         context.set_source_rgb(1.0, 1.0, 1.0)
         context.rectangle(0, 0, page_w, page_h)
@@ -73,7 +79,9 @@ class XPDFManager(PDFManagerBase):
     def __init__(self, pdf_file, quality):
         PDFManagerBase.__init__(self, pdf_file, quality)
         
-        if os.path.isabs(config.xpdfpath):
+        if not config.xpdfpath:
+            self.xpdfpath = ''
+        elif os.path.isabs(config.xpdfpath):
             self.xpdfpath = config.xpdfpath
         else:
             self.xpdfpath = os.path.join(
@@ -91,17 +99,27 @@ class XPDFManager(PDFManagerBase):
         for line in info_lines:
             key = line[:line.find(':')]
             self.pdf_info[key] = line[line.find(':') + 1:].lstrip()
-        print "Info: ", self.pdf_info
+        
+        page_size = self.pdf_info['Page size'].split()
+        self.page_size = (int(page_size[0]), int(page_size[2]))
 
     def get_num_pages(self):
-        return int(self.pdf_info['Pages'])
+        return int(self.pdf_info['Pages'])    
     
     def render_page(self, page_num, size):
-        #Resolución:
-        #72 es a R como..
-        #page_x es a size[0]
-        #pdftoppm -r 'R' (resolución)
-        return None
+        
+        dest_w, dest_h = self.get_render_size(size, self.page_size)
+
+        res = int((dest_w * 72) / self.page_size[0])
+        cmdargs = (self.pdftoppmexe,
+            '-r', str(res), '-f', str(page_num + 1), '-l',str(page_num + 1),
+            self.file, 'tmpslide')
+        pipe = Popen(cmdargs, stdout=PIPE, stderr=PIPE, universal_newlines = True)
+        pipe.wait()
+
+        img = pygame.image.load('tmpslide-%06d.ppm' % (page_num + 1))
+        os.unlink('tmpslide-%06d.ppm' % (page_num + 1))
+        return img
     
 
 PDFManager = None
