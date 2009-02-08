@@ -47,6 +47,16 @@ class Screen(object):
         self.blit_lock.release()
 
 
+class SocketClient(threading.Thread):
+
+    def __init__(self, sock):
+        self.sock = sock
+
+    def run(self):
+        while True:
+            print sock.recv(1024)
+
+
 def run():
 
     pygame.init()
@@ -83,8 +93,8 @@ def run():
         print "Unexpected packet received"
         sys.exit(-1)
 
-    while True:
-        print sock.recv(1024)
+    socket_client = SocketClient(sock)
+    socket_client.start()
 
     screen = Screen()
 
