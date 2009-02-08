@@ -54,7 +54,7 @@ class SlideManager(object):
         self.cache_lock.release()
 
     def add_to_cache(self, page_number, slide):
-        
+
         self.cache_lock.acquire()
         self.slide_cache.append((page_number, slide))
         if len(self.slide_cache) > config.cache_size:
@@ -62,7 +62,7 @@ class SlideManager(object):
         self.cache_lock.release()
 
     def get_from_cache(self, page_number, no_render=False):
-        
+
         #Check page is in range
         if page_number < 0 or page_number >= self.pdf.get_num_pages():
             return None
@@ -75,7 +75,7 @@ class SlideManager(object):
                 self.slide_cache.append(elem)
                 self.cache_lock.release()
                 return slide
-        
+
         self.cache_lock.release()
         if no_render: return None
 
@@ -97,7 +97,7 @@ class SlideManager(object):
         if self.refresh_pending \
             or not self.get_from_cache(self.current_page, no_render=True):
             self.update_display()
-    
+
     def notify_load_finished(self, slide, page):
         #If user didn't change the current page, paint it
         if page == self.current_page and not self.refresh_pending:
@@ -108,7 +108,7 @@ class SlideManager(object):
             self.screen.flip()
             self.screen.release()
             notes = self.notes.get_notes(self.current_page)
-            fire_event(EVENT_SLIDECHANGE, (self, self.current_page, notes))
+            fire_event(EVENT_SLIDECHANGE, (self, self.current_page, slide, notes))
             return True
         else:
             self.thread_lock.acquire()
@@ -116,7 +116,7 @@ class SlideManager(object):
             self.thread_lock.release()
             self.update_display()
             return False
-        
+
 
     def update_display(self):
 
@@ -142,10 +142,10 @@ class SlideManager(object):
     def refresh(self):
         self.clear_cache()
         self.update_display()
-        
+
 
 class SlideLoader(Thread):
-    
+
     def __init__(self, manager, first_slide, last_slide):
         Thread.__init__(self)
         self.manager = manager
@@ -153,9 +153,9 @@ class SlideLoader(Thread):
         self.last_slide = last_slide
         self.daemon = False
         self.running = True
-       
+
     def stop(self):
-        self.running = False 
+        self.running = False
 
 
     def run(self):
@@ -170,10 +170,10 @@ class SlideLoader(Thread):
             slides = range(self.first_slide + 1, self.last_slide + 1)
         else:
             slides = range(self.first_slide - 1, self.last_slide - 1, -1)
-        
+
         #print self.getName(),"Preloading from", slides[0], "to", slides[-1]
         for page in slides:
-            if not self.running: 
+            if not self.running:
                 #print self.getName(),"Aborted"
                 self.manager.notify_preload_finished()
                 return

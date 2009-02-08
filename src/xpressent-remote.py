@@ -108,23 +108,8 @@ def run():
         elif event.type == pygame.KEYDOWN:
             pass
         elif event.type == pygame.KEYUP:
-            if event.key == 102: #F key
-                #Toggle fullscreen
-                fullscreen = not fullscreen
-                screen.set_fullscreen(fullscreen)
-                slide.refresh()
-            elif event.key in (278, ):
-                #Home
-                slide.move_home()
-            elif event.key in (279, ):
-                #End
-                slide.move_end()
-            elif event.key in (281,275):
-                #Next page
-                slide.move_next_page()
-            elif event.key in (280,276):
-                #Previous page
-                slide.move_prev_page()
+            if event.key in (278, 270, 280, 276, 281, 275):
+                sock.send(pack("!ii", PKT_KEYPRESS, event.key))
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
