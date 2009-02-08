@@ -11,6 +11,7 @@ from datetime import datetime
 
 from pdfmanager import *
 from slidemanager import *
+from notesmanager import *
 from pygame.locals import *
 from events import *
 
@@ -18,13 +19,13 @@ if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
 
 if len(sys.argv) != 2:
-    print "Usage: %s pdf_file" % (sys.argv[0],)
+    print "Usage: %s xpr_file|pdf_file" % (sys.argv[0],)
     print
     sys.exit(-1)
 
-pdf_file = os.path.abspath(sys.argv[1])
-if not os.path.exists(pdf_file):
-    print "File %s not found" % (pdf_file,)
+xpr_file = os.path.abspath(sys.argv[1])
+if not os.path.exists(xpr_file):
+    print "File %s not found" % (xpr_file,)
     print
     sys.exit(-1)
 
@@ -98,12 +99,15 @@ def run():
     pygame.mouse.set_visible(False)
 
     try:
+        notes = NotesManager(xpr_file)
+        pdf_file = notes.get_pdf_file()
         doc = PDFManager(pdf_file, quality)
     except Exception, ex:
         print ex.message
         print
         sys.exit(-1)
-    slide = SlideManager(screen, doc)
+    
+    slide = SlideManager(screen, notes, doc)
 
     while True:
         event = pygame.event.wait()

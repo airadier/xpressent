@@ -2,11 +2,13 @@ import pygame
 import config
 from threading import Thread, Lock
 from datetime import datetime
+from plugins.IPlugin import fire_event, EVENT_SLIDECHANGE
 
 class SlideManager(object):
 
-    def __init__(self, screen, pdf):
+    def __init__(self, screen, notes, pdf):
         self.screen = screen
+        self.notes = notes
         self.pdf = pdf
         self.current_page = 0
         self.direction = 1
@@ -105,6 +107,8 @@ class SlideManager(object):
             self.screen.blit(slide, ((size[0] - slide.get_width()) / 2, (size[1] - slide.get_height()) / 2))
             self.screen.flip()
             self.screen.release()
+            notes = self.notes.get_notes(self.current_page)
+            fire_event(EVENT_SLIDECHANGE, (self, self.current_page, notes))
             return True
         else:
             self.thread_lock.acquire()
