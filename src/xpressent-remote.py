@@ -55,6 +55,7 @@ class Screen(object):
 class SocketClient(threading.Thread):
 
     def __init__(self, sock):
+        threading.Thread.__init__(self)
         self.sock = sock
 
     def read_string(self, length):
@@ -77,7 +78,9 @@ class SocketClient(threading.Thread):
                 f = cStringIO.StringIO()
                 f.write(slide_png)
                 f.seek(0)
-                slide = pygame.image.load(f, 'img.png)
+                slide = pygame.image.load(f, 'img.png')
+                screen.blit(slide,(0,0))
+                screen.flip()
 
 
 def run():
