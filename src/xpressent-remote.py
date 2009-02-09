@@ -76,7 +76,7 @@ class SocketClient(threading.Thread):
             pkt_type, = unpack("!i", self.sock.recv(4))
             if pkt_type == PKT_NOTES:
                 notes_len, = unpack("!i", self.sock.recv(4))
-                notes = self.read_string(notes_len)
+                notes = str.decode(self.read_string(notes_len),'utf-8)
                 print notes
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))

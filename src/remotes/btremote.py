@@ -55,8 +55,9 @@ class BluetoothRemote(Thread):
         #Send notes to all clients
         for client in [client] if client else self.clients:
             try:
-                client.send(pack("!ii", PKT_NOTES, len(notes)))
-                client.send(notes)
+                notes_utf = notes.encode('utf-8')
+                client.send(pack("!ii", PKT_NOTES, len(notes_utf)))
+                client.send(notes_utf)
             except IOError:
                 pass
         
