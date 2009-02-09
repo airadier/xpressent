@@ -39,7 +39,7 @@ class BluetoothRemote(Thread):
         imgstr = pygame.image.tostring(slide, 'RGB')
         pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
         f = cStringIO.StringIO()
-        pil_image.save(f, 'JPEG')
+        pil_image.save(f, 'JPEG', quality=25)
         slide_jpg = f.getvalue()
         f.close()
 

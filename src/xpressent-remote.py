@@ -51,6 +51,10 @@ class Screen(object):
         pygame.display.flip()
         self.blit_lock.release()
 
+    def clear(self):
+        self.surface.fill((0,0,0))
+
+
 
 class SocketClient(threading.Thread):
 
@@ -81,6 +85,7 @@ class SocketClient(threading.Thread):
                 f.write(slide_jpg)
                 f.seek(0)
                 slide = pygame.image.load(f, 'img.jpg')
+                self.screen.clear()
                 self.screen.blit(slide,(0,0))
                 self.screen.flip()
 
@@ -144,8 +149,6 @@ def run():
                 sys.exit(0)
             else:
                 print 'Key', event.key
-
-            #pygame.event.clear(pygame.KEYUP)
 
         elif event.type == pygame.MOUSEMOTION:
             pygame.mouse.set_visible(True)
