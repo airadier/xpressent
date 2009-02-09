@@ -49,7 +49,7 @@ class BluetoothRemote(Thread):
             try:
                 client.send(pack("!iii", PKT_CURRSLIDE, len(slide_png), page_number))
                 client.send(slide_png)
-            except:
+            except IOError:
                 pass
 
         #Send notes to all clients
@@ -57,11 +57,11 @@ class BluetoothRemote(Thread):
             try:
                 client.send(pack("!ii", PKT_NOTES, len(notes)))
                 client.send(notes)
-            except:
+            except IOError:
                 pass
         
         self.slidemanager = slidemanager
-        self.current_slide = slide_png
+        self.current_slide = slide
         self.current_notes = notes
         self.page_number = page_number
 
@@ -112,8 +112,6 @@ class BluetoothRemote(Thread):
 
             except IOError:
                 pass
-            except Exception:
-                print "BT Error"
 
             print "BT Client Disconnected"
 
