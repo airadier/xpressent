@@ -33,7 +33,7 @@ class Screen(object):
         self.blit_lock.acquire()
         surface = pygame.display.set_mode(
             pygame.display.list_modes()[0],
-            pygame.DOUBLEBUF | pygame.HWSURFACE | (0 and pygame.FULLSCREEN))
+            pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN)
         self.blit_lock.release()
         return surface
 
@@ -76,7 +76,7 @@ class SocketClient(threading.Thread):
             pkt_type, = unpack("!i", self.sock.recv(4))
             if pkt_type == PKT_NOTES:
                 notes_len, = unpack("!i", self.sock.recv(4))
-                notes = str.decode(self.read_string(notes_len),'utf-8)
+                notes = str.decode(self.read_string(notes_len),'utf-8')
                 print notes
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))

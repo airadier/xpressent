@@ -26,7 +26,7 @@ class BluetoothRemote(Thread):
         self.daemon = True
         self._socket = None
         self.clients = []
-        self.remote_size = (640, 480)
+        self.client_size = (640, 480)
         self.current_slide = None
         self.current_notes = None
         self.slidemanager = None
@@ -36,10 +36,11 @@ class BluetoothRemote(Thread):
 
         if not slidemanager: return
 
+        slide = pygame.transform.scale(slide, self.client_size)
         imgstr = pygame.image.tostring(slide, 'RGB')
         pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
         f = cStringIO.StringIO()
-        pil_image.save(f, 'JPEG', quality=25)
+        pil_image.save(f, 'JPEG', quality=15)
         slide_jpg = f.getvalue()
         f.close()
 
