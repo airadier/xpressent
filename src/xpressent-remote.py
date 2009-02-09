@@ -62,19 +62,19 @@ class SocketClient(threading.Thread):
     def read_string(self, length):
         read = ""
         while len(read) < length:
-            read = read + sock.recv(length-len(read))
+            read = read + self.sock.recv(length-len(read))
         
         return read
 
     def run(self):
         while True:
-            pkt_type, = unpack("!i", sock.recv(4))
+            pkt_type, = unpack("!i", self.sock.recv(4))
             if pkt_type == PKT_NOTES:
-                notes_len, = unpack("!i", sock.recv(4))
+                notes_len, = unpack("!i", self.sock.recv(4))
                 notes = self.read_string(notes_len)
                 print notes
             elif pkt_type == PKT_CURRSLIDE:
-                slide_len, = unpack("!i", sock.recv(4))
+                slide_len, = unpack("!i", self.sock.recv(4))
                 slide_png = self.read_string(slide_len)
                 f = cStringIO.StringIO()
                 f.write(slide_png)

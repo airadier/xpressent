@@ -35,18 +35,24 @@ class BluetoothRemote(Thread):
         f = cStringIO.StringIO()
         pil_image.save(f, 'PNG')
         slide_png = f.getvalue()
+        f.close()
 
         #Send current slide to all clients
         for client in self.clients:
             print "Sending %d bytes of slide", len(slide_png)
-            client.send(pack("!ii", PKT_CURRSLIDE, len(slide_png)))
-            client.send(slide_png)
-        f.close()
+            try:
+                client.send(pack("!ii", PKT_CURRSLIDE, len(slide_png)))
+                client.send(slide_png)
+            except:
+                pass
 
         #Send notes to all clients
         for client in self.clients:
-            client.send(pack("!ii", PKT_NOTES, len(notes)))
-            client.send(notes)
+            try:
+                client.send(pack("!ii", PKT_NOTES, len(notes)))
+                client.send(notes)
+            except:
+                pass
 
     def run(self):
 
