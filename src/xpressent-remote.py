@@ -54,10 +54,11 @@ class Screen(object):
 
 class SocketClient(threading.Thread):
 
-    def __init__(self, sock):
+    def __init__(self, sock, screen):
         threading.Thread.__init__(self)
         self.sock = sock
         self.daemon = True
+        self.screen = screen
 
     def read_string(self, length):
         read = ""
@@ -80,8 +81,8 @@ class SocketClient(threading.Thread):
                 f.write(slide_png)
                 f.seek(0)
                 slide = pygame.image.load(f, 'img.png')
-                screen.blit(slide,(0,0))
-                screen.flip()
+                self.screen.blit(slide,(0,0))
+                self.screen.flip()
 
 
 def run():
@@ -123,7 +124,7 @@ def run():
         print "Unexpected packet received"
         sys.exit(-1)
 
-    socket_client = SocketClient(sock)
+    socket_client = SocketClient(sock, screen)
     socket_client.start()
 
     pygame.display.set_caption('xPressent Remote')
