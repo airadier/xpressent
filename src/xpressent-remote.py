@@ -88,7 +88,7 @@ class SocketClient(threading.Thread):
                 self.slide = pygame.image.load(f, 'img.jpg')
                 self.slide.set_alpha(100)
                 self.screen.clear()
-                size = screen.get_size()
+                size = self.screen.get_size()
                 self.screen.blit(slide,(
                     (size[0]-slide.get_size[0])/2,
                     (size[1]-slide.get_size[1])/2))
@@ -98,7 +98,6 @@ class SocketClient(threading.Thread):
 def run():
 
     pygame.init()
-
 
     if len(sys.argv) != 2:
         print
