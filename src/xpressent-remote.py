@@ -76,11 +76,11 @@ class SocketClient(threading.Thread):
                 print notes
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))
-                slide_png = self.read_string(slide_len)
+                slide_jpg = self.read_string(slide_len)
                 f = cStringIO.StringIO()
-                f.write(slide_png)
+                f.write(slide_jpg)
                 f.seek(0)
-                slide = pygame.image.load(f, 'img.png')
+                slide = pygame.image.load(f, 'img.jpg')
                 self.screen.blit(slide,(0,0))
                 self.screen.flip()
 

@@ -39,16 +39,16 @@ class BluetoothRemote(Thread):
         imgstr = pygame.image.tostring(slide, 'RGB')
         pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
         f = cStringIO.StringIO()
-        pil_image.save(f, 'PNG')
-        slide_png = f.getvalue()
+        pil_image.save(f, 'JPEG')
+        slide_jpg = f.getvalue()
         f.close()
 
         #Send current slide to all clients
         for client in [client] if client else self.clients:
-            print "Sending %d bytes of slide" % len(slide_png)
+            print "Sending %d bytes of slide" % len(slide_jpg)
             try:
-                client.send(pack("!iii", PKT_CURRSLIDE, len(slide_png), page_number))
-                client.send(slide_png)
+                client.send(pack("!iii", PKT_CURRSLIDE, len(slide_jpg), page_number))
+                client.send(slide_jpg)
             except IOError:
                 pass
 
