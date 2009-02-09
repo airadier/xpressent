@@ -83,7 +83,7 @@ class SocketClient(threading.Thread):
         self.screen.flip()
 
     def paint_notes(self):
-        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=12)
+        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=20)
         y = 10
         x = 10
         for line in self.notes.split('\n'):
@@ -110,6 +110,7 @@ class SocketClient(threading.Thread):
             if pkt_type == PKT_NOTES:
                 notes_len, = unpack("!i", self.sock.recv(4))
                 self.notes = str.decode(self.read_string(notes_len),'utf-8')
+                self.repaint_slide()
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))
                 slide_jpg = self.read_string(slide_len)
