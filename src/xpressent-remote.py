@@ -57,6 +57,7 @@ class SocketClient(threading.Thread):
     def __init__(self, sock):
         threading.Thread.__init__(self)
         self.sock = sock
+        self.daemon = True
 
     def read_string(self, length):
         read = ""

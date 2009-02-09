@@ -92,6 +92,8 @@ class BluetoothRemote(Thread):
 
             except IOError:
                 pass
+            except Exception:
+                print "BT Error"
 
             print "BT Client Disconnected"
 
