@@ -68,7 +68,7 @@ class SocketClient(threading.Thread):
 
     def repaint_slide(self):
         if self.show_notes:
-            self.slide.set_alpha(50)
+            self.slide.set_alpha(30)
         else:
             self.slide.set_alpha(255)
 
@@ -78,7 +78,19 @@ class SocketClient(threading.Thread):
         self.screen.blit(self.slide,(
             (size[0]-slide_size[0])/2,
             (size[1]-slide_size[1])/2))
+        if self.show_notes:
+            self.paint_notes()
         self.screen.flip()
+
+    def paint_notes(self):
+        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=12)
+        y = 10
+        x = 10
+        for line in self.notes.split('\n'):
+            surf = font.render(line,True, (255,255,255))
+            self.screen.blit(surf, (x,y))
+            y = y + font.get_linesize()
+        print notes
 
 
     def toggle_notes(self):
@@ -97,8 +109,7 @@ class SocketClient(threading.Thread):
             pkt_type, = unpack("!i", self.sock.recv(4))
             if pkt_type == PKT_NOTES:
                 notes_len, = unpack("!i", self.sock.recv(4))
-                notes = str.decode(self.read_string(notes_len),'utf-8')
-                print notes
+                self.notes = str.decode(self.read_string(notes_len),'utf-8')
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))
                 slide_jpg = self.read_string(slide_len)
