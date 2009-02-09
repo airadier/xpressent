@@ -90,7 +90,7 @@ class SocketClient(threading.Thread):
             surf = font.render(line,True, (255,255,255))
             self.screen.blit(surf, (x,y))
             y = y + font.get_linesize()
-        print notes
+        print self.notes
 
 
     def toggle_notes(self):
