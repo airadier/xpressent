@@ -65,6 +65,8 @@ class SocketClient(threading.Thread):
         self.screen = screen
         self.slide = None
         self.show_notes = False
+        self.font = None
+        self.font_size = 40
 
     def repaint_slide(self):
         if self.show_notes:
@@ -83,7 +85,7 @@ class SocketClient(threading.Thread):
         self.screen.flip()
 
     def paint_notes(self):
-        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=20)
+        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
         y = 10
         x = 10
         for line in self.notes.split('\n'):
@@ -103,6 +105,14 @@ class SocketClient(threading.Thread):
             read = read + self.sock.recv(length-len(read))
 
         return read
+
+    def decrease_font(self):
+        self.font_size = self.font_size - 5
+        self.repaint_slide()
+
+    def increase_font(self):
+        self.font_size = self.font_size + 5
+        self.repaint_slide()
 
     def run(self):
         while True:
@@ -177,8 +187,12 @@ def run():
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
-            elif event.key == 32:
+            elif event.key in (13,32):
                 socket_client.toggle_notes()
+            elif event.key == 288:
+                socket_client.increase_font()
+            elif event.key == 289:
+                socket_client.decrease_font()
             else:
                 print 'Key', event.key
 
