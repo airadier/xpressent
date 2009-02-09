@@ -3,6 +3,7 @@
 import pygame
 import sys
 import threading
+import cStringIO
 from struct import pack, unpack
 from pygame.locals import *
 from events import *
@@ -16,6 +17,10 @@ UUID = "829abc54-a67d-0e10-ba67-00bc59a5ce41"
 PROT_VERSION = 1
 PKT_HELLO = 0
 PKT_KEYPRESS = 1
+PKT_CURRSLIDE = 2
+PKT_NEXTSLIDE = 3
+PKT_PREVSLIDE = 4
+PKT_NOTES = 5
 
 
 class Screen(object):
@@ -52,9 +57,27 @@ class SocketClient(threading.Thread):
     def __init__(self, sock):
         self.sock = sock
 
+    def read_string(self, length):
+        read = ""
+        while len(read) < length:
+            read = read + sock.recv(length-len(read))
+        
+        return read
+
     def run(self):
         while True:
-            print sock.recv(1024)
+            pkt_type, = unpack("!i", sock.recv(4))
+            if pkt_type == PKT_NOTES:
+                notes_len, = unpack("!i", sock.recv(4))
+                notes = self.read_string(notes_len)
+                print notes
+            elif pkt_type == PKT_CURRSLIDE:
+                slide_len, = unpack("!i", sock.recv(4))
+                slide_png = self.read_string(slide_len)
+                f = cStringIO.StringIO()
+                f.write(slide_png)
+                f.seek(0)
+                slide = pygame.image.load(f, 'img.png)
 
 
 def run():
@@ -84,7 +107,10 @@ def run():
     sock = BluetoothSocket(RFCOMM)
     sock.connect((first_match['host'], first_match['port']))
 
-    sock.send(pack("!ii", PROT_VERSION, PKT_HELLO))
+    screen = Screen()
+    size = screen.get_size()
+
+    sock.send(pack("!iiii", PROT_VERSION, PKT_HELLO, size[0], size[1]))
     version, = unpack("!i", sock.recv(4))
     if version > PROT_VERSION:
         print "Unsupported server version: %d", version
@@ -95,8 +121,6 @@ def run():
 
     socket_client = SocketClient(sock)
     socket_client.start()
-
-    screen = Screen()
 
     pygame.display.set_caption('xPressent Remote')
     pygame.mouse.set_visible(False)

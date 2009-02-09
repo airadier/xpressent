@@ -1,5 +1,7 @@
 import config
 import pygame
+import Image
+import cStringIO
 from struct import pack, unpack
 from bluetooth import *
 from pygame.event import Event
@@ -11,9 +13,10 @@ UUID = "829abc54-a67d-0e10-ba67-00bc59a5ce41"
 PROT_VERSION = 1
 PKT_HELLO = 0
 PKT_KEYPRESS = 1
-PKT_CURR_SLIDE = 2
-PKT_NEXT_SLIDE = 3
-PKT_PREV_SLIDE = 4
+PKT_CURRSLIDE = 2
+PKT_NEXTSLIDE = 3
+PKT_PREVSLIDE = 4
+PKT_NOTES = 5
 
 
 class BluetoothRemote(Thread):
@@ -23,9 +26,26 @@ class BluetoothRemote(Thread):
         self.daemon = True
         self._socket = None
         self.clients = []
+        self.remote_size = (640, 480)
 
-    def slide_change(self, slidemanager, slide, page_number, notes):
+    def slide_change(self, slidemanager, page_number, slide, notes):
+
+        imgstr = pygame.image.tostring(slide, 'RGB')
+        pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
+        f = cStringIO.StringIO()
+        pil_image.save(f, 'PNG')
+        slide_png = f.getvalue()
+
+        #Send current slide to all clients
         for client in self.clients:
+            print "Sending %d bytes of slide", len(slide_png)
+            client.send(pack("!ii", PKT_CURRSLIDE, len(slide_png)))
+            client.send(slide_png)
+        f.close()
+
+        #Send notes to all clients
+        for client in self.clients:
+            client.send(pack("!ii", PKT_NOTES, len(notes)))
             client.send(notes)
 
     def run(self):
@@ -60,6 +80,7 @@ class BluetoothRemote(Thread):
                     print "Unexpected message received"
                     raise IOError
 
+                self.client_size = unpack("!ii", client_sock.recv(8))
                 self.clients.append(client_sock)
 
                 while True:
