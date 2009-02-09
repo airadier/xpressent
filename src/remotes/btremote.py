@@ -27,8 +27,14 @@ class BluetoothRemote(Thread):
         self._socket = None
         self.clients = []
         self.remote_size = (640, 480)
+        self.current_slide = None
+        self.current_notes = None
+        self.slidemanager = None
+        self.page_number = None
 
-    def slide_change(self, slidemanager, page_number, slide, notes):
+    def slide_change(self, slidemanager, page_number, slide, notes, client=None):
+
+        if not slidemanager: return
 
         imgstr = pygame.image.tostring(slide, 'RGB')
         pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
@@ -38,21 +44,26 @@ class BluetoothRemote(Thread):
         f.close()
 
         #Send current slide to all clients
-        for client in self.clients:
-            print "Sending %d bytes of slide", len(slide_png)
+        for client in [client] if client else self.clients:
+            print "Sending %d bytes of slide" % len(slide_png)
             try:
-                client.send(pack("!ii", PKT_CURRSLIDE, len(slide_png)))
+                client.send(pack("!iii", PKT_CURRSLIDE, len(slide_png), page_number))
                 client.send(slide_png)
             except:
                 pass
 
         #Send notes to all clients
-        for client in self.clients:
+        for client in [client] if client else self.clients:
             try:
                 client.send(pack("!ii", PKT_NOTES, len(notes)))
                 client.send(notes)
             except:
                 pass
+        
+        self.slidemanager = slidemanager
+        self.current_slide = slide_png
+        self.current_notes = notes
+        self.page_number = page_number
 
     def run(self):
 
@@ -88,6 +99,9 @@ class BluetoothRemote(Thread):
 
                 self.client_size = unpack("!ii", client_sock.recv(8))
                 self.clients.append(client_sock)
+                
+                #Send current slide to client
+                self.slide_change(self.slidemanager, self.page_number, self.current_slide, self.current_notes, client = client_sock)
 
                 while True:
                     pkt_type, = unpack("!i", client_sock.recv(4))

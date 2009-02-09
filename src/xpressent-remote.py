@@ -74,7 +74,7 @@ class SocketClient(threading.Thread):
                 notes = self.read_string(notes_len)
                 print notes
             elif pkt_type == PKT_CURRSLIDE:
-                slide_len, = unpack("!i", self.sock.recv(4))
+                slide_len, page_number = unpack("!ii", self.sock.recv(4))
                 slide_png = self.read_string(slide_len)
                 f = cStringIO.StringIO()
                 f.write(slide_png)
