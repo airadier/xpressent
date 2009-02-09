@@ -32,11 +32,24 @@ class BluetoothRemote(Thread):
         self.slidemanager = None
         self.page_number = None
 
+    def get_aspect_size(self, screen_size, page_size):
+        #Calculate and compare
+        page_ratio = float(page_size[0]) / float(page_size[1])
+        screen_ratio = float(screen_size[0]) / float(screen_size[1])
+        if page_ratio >= screen_ratio:
+            dest_w = screen_size[0]
+            dest_h = screen_size[0] / page_ratio
+        else:
+            dest_h = screen_size[1]
+            dest_w = screen_size[1] * page_ratio
+
+        return int(dest_w), int(dest_h)
+
     def slide_change(self, slidemanager, page_number, slide, notes, client=None):
 
         if not slidemanager: return
 
-        slide = pygame.transform.scale(slide, self.client_size)
+        slide = pygame.transform.scale(slide, self.get_aspect_size(self.client_size, slide.get_size()))
         imgstr = pygame.image.tostring(slide, 'RGB')
         pil_image = Image.fromstring('RGB', slide.get_size(), imgstr)
         f = cStringIO.StringIO()
@@ -46,7 +59,6 @@ class BluetoothRemote(Thread):
 
         #Send current slide to all clients
         for client in [client] if client else self.clients:
-            print "Sending %d bytes of slide" % len(slide_jpg)
             try:
                 client.send(pack("!iii", PKT_CURRSLIDE, len(slide_jpg), page_number))
                 client.send(slide_jpg)
@@ -61,7 +73,7 @@ class BluetoothRemote(Thread):
                 client.send(notes_utf)
             except IOError:
                 pass
-        
+
         self.slidemanager = slidemanager
         self.current_slide = slide
         self.current_notes = notes
@@ -101,7 +113,7 @@ class BluetoothRemote(Thread):
 
                 self.client_size = unpack("!ii", client_sock.recv(8))
                 self.clients.append(client_sock)
-                
+
                 #Send current slide to client
                 self.slide_change(self.slidemanager, self.page_number, self.current_slide, self.current_notes, client = client_sock)
 

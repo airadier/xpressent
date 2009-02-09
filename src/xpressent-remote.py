@@ -63,12 +63,13 @@ class SocketClient(threading.Thread):
         self.sock = sock
         self.daemon = True
         self.screen = screen
+        self.slide = None
 
     def read_string(self, length):
         read = ""
         while len(read) < length:
             read = read + self.sock.recv(length-len(read))
-        
+
         return read
 
     def run(self):
@@ -84,9 +85,13 @@ class SocketClient(threading.Thread):
                 f = cStringIO.StringIO()
                 f.write(slide_jpg)
                 f.seek(0)
-                slide = pygame.image.load(f, 'img.jpg')
+                self.slide = pygame.image.load(f, 'img.jpg')
+                self.slide.set_alpha(100)
                 self.screen.clear()
-                self.screen.blit(slide,(0,0))
+                size = screen.get_size()
+                self.screen.blit(slide,(
+                    (size[0]-slide.get_size[0])/2,
+                    (size[1]-slide.get_size[1])/2))
                 self.screen.flip()
 
 
