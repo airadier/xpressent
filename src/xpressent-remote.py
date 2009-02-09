@@ -64,6 +64,26 @@ class SocketClient(threading.Thread):
         self.daemon = True
         self.screen = screen
         self.slide = None
+        self.show_notes = False
+
+    def repaint_slide(self):
+        if self.show_notes:
+            self.slide.set_alpha(50)
+        else:
+            self.slide.set_alpha(255)
+
+        self.screen.clear()
+        size = self.screen.get_size()
+        slide_size = self.slide.get_size()
+        self.screen.blit(self.slide,(
+            (size[0]-slide_size[0])/2,
+            (size[1]-slide_size[1])/2))
+        self.screen.flip()
+
+
+    def toggle_notes(self):
+        self.show_notes = not self.show_notes
+        self.repaint_slide()
 
     def read_string(self, length):
         read = ""
@@ -86,14 +106,7 @@ class SocketClient(threading.Thread):
                 f.write(slide_jpg)
                 f.seek(0)
                 self.slide = pygame.image.load(f, 'img.jpg')
-                self.slide.set_alpha(100)
-                self.screen.clear()
-                size = self.screen.get_size()
-                slide_size = self.slide.get_size()
-                self.screen.blit(self.slide,(
-                    (size[0]-slide_size[0])/2,
-                    (size[1]-slide_size[1])/2))
-                self.screen.flip()
+                self.repaint_slide()
 
 
 def run():
@@ -152,6 +165,8 @@ def run():
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
+            elif event.key == 32:
+                socket_client.toggle_notes()
             else:
                 print 'Key', event.key
 
