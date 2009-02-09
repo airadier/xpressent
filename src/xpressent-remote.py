@@ -89,9 +89,10 @@ class SocketClient(threading.Thread):
                 self.slide.set_alpha(100)
                 self.screen.clear()
                 size = self.screen.get_size()
+                slide_size = self.slide.get_size()
                 self.screen.blit(slide,(
-                    (size[0]-slide.get_size[0])/2,
-                    (size[1]-slide.get_size[1])/2))
+                    (size[0]-slide_size[0])/2,
+                    (size[1]-slide_size[1])/2))
                 self.screen.flip()
 
 
