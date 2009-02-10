@@ -28,23 +28,24 @@ PKT_NOTES = 5
 
 class Screen(object):
 
-    def __init__(self):
+    def __init__(self, fullscreen, size=(800,480)):
         self.blit_lock = threading.Lock()
-        self.surface = self.set_videomode()
+        self.surface = self.set_videomode(fullscreen, size)
 
-    def set_videomode(self):
+    def set_videomode(self, fullscreen, size):
         self.blit_lock.acquire()
         
-        surface = pygame.display.set_mode((800,480))
-        #surface = pygame.display.set_mode(
-        #    pygame.display.list_modes()[0],
-        #    pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN)
+        if not fullscreen:
+            surface = pygame.display.set_mode(size)
+        else:
+            surface = pygame.display.set_mode(
+                pygame.display.list_modes()[0],
+                pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN)
         self.blit_lock.release()
         return surface
 
     def get_size(self):
-        size = (self.surface.get_width(), self.surface.get_height())
-        return size
+        return self.surface.get_width(), self.surface.get_height()
 
     def blit(self, source, position):
         self.blit_lock.acquire()
@@ -98,7 +99,6 @@ class BaseClient(threading.Thread):
             surf = font.render(line,True, (255,255,255))
             self.screen.blit(surf, (x,y))
             y = y + font.get_linesize()
-        print self.notes
 
     def toggle_notes(self):
         self.show_notes = not self.show_notes
@@ -112,6 +112,7 @@ class BaseClient(threading.Thread):
 
     def decrease_font(self):
         self.font_size = self.font_size - 5
+        if self.font_size < 5: self.font_size = 5
         self.repaint_slide()
 
     def increase_font(self):
@@ -172,7 +173,37 @@ class BaseClient(threading.Thread):
     
 
 class BluetoothClient(BaseClient):
-    pass
+    def connect(self):
+            
+        if len(self.args) != 2:
+            print
+            print "Usage: %s xpressent_bt_addr" % (os.path.basename(sys.argv[0]),)
+            print "No address specified, searching in all nearby devices..."
+            addr = None
+        else:
+            addr = self.args[1]
+            print "Searching Xpressent service in addr %s..." % addr        
+        
+        service_matches = find_service(uuid = UUID, address = addr)
+        if len(service_matches) == 0:
+            print "Xpressent service not found"
+            return False
+
+        first_match = service_matches[0]
+        print "Connecting to %s at %s" % (
+            first_match['name'],
+            first_match['host'])
+
+        self.sock = BluetoothSocket(RFCOMM)
+        self.sock.connect((first_match['host'], first_match['port']))
+            
+        return True
+
+    def recv(self, size):
+        return self.sock.recv(size)
+    
+    def send(self, data):
+        return self.sock.send(data)
 
 
 class SocketClient(BaseClient):
@@ -205,32 +236,9 @@ def run():
 
     pygame.init()
 
-    #if len(sys.argv) != 2:
-    #    print
-    #    print "Usage: %s xpressent_addr" % (sys.argv[0],)
-    #    print "No address specified, searching in all nearby devices..."
-    #    sys.exit(-1)
-    #    addr = None
-    #else:
-    #    addr = sys.argv[1]
-    #    print "Searching Xpressent service in addr %s..." % addr
+    screen = Screen(False)
 
-    #service_matches = find_service(uuid = UUID, address = addr)
-    #if len(service_matches) == 0:
-    #    print "Xpressent service not found"
-    #    sys.exit(-1)
-
-    #first_match = service_matches[0]
-    #print "Connection to %s at %s" % (
-    #    first_match['name'],
-    #    first_match['host'])
-
-
-    #sock = BluetoothSocket(RFCOMM)
-    #sock.connect((first_match['host'], first_match['port']))
-
-    screen = Screen()
-
+    #client = BluetoothClient(sys.argv, screen)
     client = SocketClient(sys.argv, screen)
     client.start()
 
@@ -244,16 +252,20 @@ def run():
         elif event.type == pygame.KEYDOWN:
             pass
         elif event.type == pygame.KEYUP:
-            if event.key in (278, 270, 280, 276, 281, 275):
+            if event.key in (275, 276, 280, 281, 278, 279):
+                #Left, Right, Prev, Next, Home, end
                 client.send_keypress(event.key)
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
             elif event.key in (13,32):
+                #Space or enter
                 client.toggle_notes()
-            elif event.key == 288:
+            elif event.key in (273, 288,):
+                #Up, zoom in
                 client.increase_font()
-            elif event.key == 289:
+            elif event.key in (274, 289):
+                #Down, zoom out
                 client.decrease_font()
             else:
                 print 'Key', event.key
