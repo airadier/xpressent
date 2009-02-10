@@ -227,7 +227,7 @@ def run():
 
     pygame.init()
 
-    if sys.argv[1].lower() == '-f':
+    if len(sys.argv) > 1 and sys.argv[1].lower() == '-f':
         fullscreen = True
         del sys.argv[1]
     else:
