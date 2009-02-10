@@ -21,7 +21,7 @@ class NotesManager():
                 self.notes.append(current_note)
                 current_note = u""
             else:
-                current_note = current_note + line
+                current_note = current_note + line.decode('utf-8')
         f.close()
             
     def get_pdf_file(self):

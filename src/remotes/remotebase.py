@@ -2,6 +2,7 @@ import config
 import pygame
 import Image
 import cStringIO
+import traceback
 from struct import pack, unpack
 from pygame.event import Event
 from threading import Thread
@@ -75,7 +76,8 @@ class RemoteBase(Thread):
                 self.send(client, pack("!iii", PKT_CURRSLIDE, len(slide_jpg), page_number))
                 self.send(client, slide_jpg)
             except IOError:
-                pass
+                traceback.print_exc()
+                self.close(client)
 
         #Send notes to all clients
         for client in [client] if client else self.clients:
@@ -84,7 +86,8 @@ class RemoteBase(Thread):
                 self.send(client, pack("!ii", PKT_NOTES, len(notes_utf)))
                 self.send(client, notes_utf)
             except IOError:
-                pass
+                traceback.print_exc()
+                self.close(client)
 
         #Save current data for other clients
         self.slidemanager = slidemanager
@@ -131,14 +134,19 @@ class RemoteBase(Thread):
                         key, = unpack("!i", self.recv(client, 4))
                         pygame.event.post(Event(pygame.KEYUP, key=key, mod=None))
 
-            except IOError,ex:
-                print "IOError:", ex
-            except Exception,ex:
-                print "Error:",ex
+            except IOError:
+                print "IOError:"
+                traceback.print_exc()
+            except Exception:
+                pass
 
             print "Client Disconnected:", client_info
 
-            self.clients.remove(client)
+            try:
+                self.clients.remove(client)
+            except:
+                pass
+            
             self.close(client)
 
         self.shutdown()

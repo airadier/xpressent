@@ -14,11 +14,7 @@ class BluetoothRemote(RemoteBase):
         client.send(data)
 
     def recv(self, client, bytes):
-        read = ""
-        while len(read) < bytes:
-            read = read + client.recv(bytes)
-        
-        return read
+        return client.recv(bytes)
 
     def close(self, client):
         client.close()

@@ -6,6 +6,7 @@ import threading
 import cStringIO
 import socket
 import os
+import traceback
 from struct import pack, unpack
 from pygame.locals import *
 from pygame.event import Event
@@ -30,19 +31,20 @@ class Screen(object):
 
     def __init__(self, fullscreen, size=(800,480)):
         self.blit_lock = threading.Lock()
-        self.surface = self.set_videomode(fullscreen, size)
+        self.size = size
+        self.fullscreen = fullscreen
+        self.surface = None
 
-    def set_videomode(self, fullscreen, size):
-        self.blit_lock.acquire()
+    def set_videomode(self):
         
-        if not fullscreen:
-            surface = pygame.display.set_mode(size)
+        self.blit_lock.acquire()
+        if not self.fullscreen:
+            self.surface = pygame.display.set_mode(self.size)
         else:
-            surface = pygame.display.set_mode(
+            self.surface = pygame.display.set_mode(
                 pygame.display.list_modes()[0],
                 pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN)
         self.blit_lock.release()
-        return surface
 
     def get_size(self):
         return self.surface.get_width(), self.surface.get_height()
@@ -126,15 +128,7 @@ class BaseClient(threading.Thread):
         self.send(pack("!ii", PKT_KEYPRESS, keycode))
 
     def run(self):
-        
-        try:
-            if not self.connect():
-                self.quit()
-                return
-        except Exception, ex:
-            print ex
-            self.quit()
-            
+                    
         size = self.screen.get_size()
         self.send(pack("!iiii", PROT_VERSION, PKT_HELLO, size[0], size[1]))
         version, = unpack("!i", self.recv(4))
@@ -175,13 +169,11 @@ class BaseClient(threading.Thread):
 class BluetoothClient(BaseClient):
     def connect(self):
             
-        if len(self.args) != 2:
-            print
-            print "Usage: %s xpressent_bt_addr" % (os.path.basename(sys.argv[0]),)
+        if len(self.args) <1:
             print "No address specified, searching in all nearby devices..."
             addr = None
         else:
-            addr = self.args[1]
+            addr = self.args[0]
             print "Searching Xpressent service in addr %s..." % addr        
         
         service_matches = find_service(uuid = UUID, address = addr)
@@ -209,14 +201,13 @@ class BluetoothClient(BaseClient):
 class SocketClient(BaseClient):
     
     def connect(self):
-        if len(self.args) != 2:
-            print
-            print "Usage: %s host:port" % (os.path.basename(self.args[0]),)
-            print "\n   No address specified!"
-            return False
+        addr = self.args[0].split(':')
+        if len(addr) > 1:
+            host = addr[0]
+            port = int(addr[1])
         else:
-            addr = self.args[0]
-            host, port = self.args[1].split(':')
+            host = addr[0]
+            port = 48151
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, int(port)))
@@ -236,10 +227,31 @@ def run():
 
     pygame.init()
 
-    screen = Screen(False)
+    if sys.argv[1].lower() == '-f':
+        fullscreen = True
+        del sys.argv[1]
+    else:
+        fullscreen = False
 
-    #client = BluetoothClient(sys.argv, screen)
-    client = SocketClient(sys.argv, screen)
+    screen = Screen(fullscreen)
+    connect = False
+
+    try:
+        if len(sys.argv) == 3 and sys.argv[1].lower() == '-s':
+            client = SocketClient(sys.argv[2:], screen)
+        elif len(sys.argv) in (2,3) and sys.argv[1].lower() == '-b':
+            client = BluetoothClient(sys.argv[2:], screen)
+        else:
+            print "Usage: %s [-f] (-b [btaddr] | -s host:port)" % (os.path.basename(sys.argv[0]),)
+            print
+            sys.exit(-1)
+        connect = client.connect()        
+    except:
+        traceback.print_exc()
+        
+    if not connect: sys.exit(-1)
+
+    screen.set_videomode()
     client.start()
 
     pygame.display.set_caption('xPressent Remote')
