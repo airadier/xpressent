@@ -20,12 +20,15 @@ class SocketRemote(RemoteBase):
         client.close()
         
     def initialize(self):
-        self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_sock.bind(("",48151))
-        self.server_sock.listen(1)
-
-        print "sockname", self.server_sock.getsockname()
-        self.port = self.server_sock.getsockname()[1]
+        try:
+            self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_sock.bind(("",48151))
+            self.server_sock.listen(1)
+            self.port = self.server_sock.getsockname()[1]
+            return True
+        except Exception, ex:
+            print "Socket error:", ex
+            return False
 
     def wait_connection(self):
         print "Waiting for connection on port %d" % self.port

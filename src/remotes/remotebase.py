@@ -98,7 +98,7 @@ class RemoteBase(Thread):
         #Register remote as event listener
         register_event_listener(EVENT_SLIDECHANGE, self.slide_change)
         
-        self.initialize()
+        if not self.initialize(): return
         
         while True:
             #Wait for a new connection

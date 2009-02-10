@@ -24,21 +24,25 @@ class BluetoothRemote(RemoteBase):
         client.close()
         
     def initialize(self):
-        self.server_sock = BluetoothSocket( RFCOMM )
-        self.server_sock.bind(("",PORT_ANY))
-        self.server_sock.listen(1)
+        try:
+            self.server_sock = BluetoothSocket( RFCOMM )
+            self.server_sock.bind(("",PORT_ANY))
+            self.server_sock.listen(1)
 
-        print "sockname", self.server_sock.getsockname()
-        self.port = self.server_sock.getsockname()[1]
+            print "sockname", self.server_sock.getsockname()
+            self.port = self.server_sock.getsockname()[1]
 
-        advertise_service( self.server_sock, "XPressent Remote Server",
-                          service_id = UUID,
-                          service_classes = [ UUID, SERIAL_PORT_CLASS ],
-                          profiles = [ SERIAL_PORT_PROFILE ] )        
+            advertise_service( self.server_sock, "XPressent Remote Server",
+                              service_id = UUID,
+                              service_classes = [ UUID, SERIAL_PORT_CLASS ],
+                              profiles = [ SERIAL_PORT_PROFILE ] )
+            return True
+        except Exception, ex:
+            print "BT Error:", ex
+            return False
         
     def wait_connection(self):
         print "Waiting for connection on RFCOMM channel %d" % self.port
-
         client_sock, client_info = self.server_sock.accept()
         print "Got connection from ", client_info
         return client_sock, client_info

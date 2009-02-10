@@ -8,15 +8,16 @@ import remotes
 import plugins
 import threading
 from datetime import datetime
-
 from pdfmanager import *
 from slidemanager import *
 from notesmanager import *
 from pygame.locals import *
-from events import *
 
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
+
+#User defined pygame events
+EVENT_HIDEMOUSE = pygame.USEREVENT + 1
 
 if len(sys.argv) != 2:
     print "Usage: %s xpr_file|pdf_file" % (sys.argv[0],)
@@ -29,16 +30,12 @@ if not os.path.exists(xpr_file):
     print
     sys.exit(-1)
 
-quality = config.quality
-
 class Screen(object):
-    
-    
+        
     def __init__(self, fullscreen, window_size):
         self.window_size = window_size
         self.size_lock = threading.RLock() 
         self.blit_lock = threading.Lock()
-
         self.surface = self.set_videomode(fullscreen, window_size)
     
     def set_videomode(self,fullscreen, window_size):
@@ -101,23 +98,23 @@ def run():
     try:
         notes = NotesManager(xpr_file)
         pdf_file = notes.get_pdf_file()
-        doc = PDFManager(pdf_file, quality)
+        doc = PDFManager(pdf_file, config.quality)
+        slide = SlideManager(screen, notes, doc)
     except Exception, ex:
         print ex.message
         print
         sys.exit(-1)
     
-    slide = SlideManager(screen, notes, doc)
-
     while True:
         event = pygame.event.wait()
+        
         if event.type == pygame.QUIT:
             sys.exit(0)
         elif event.type == pygame.KEYDOWN:
             pass
         elif event.type == pygame.KEYUP:
-            if event.key == 102: #F key
-                #Toggle fullscreen
+            if event.key == 102:
+                #F key, toggle fullscreen
                 fullscreen = not fullscreen
                 screen.set_fullscreen(fullscreen)
                 slide.refresh()
@@ -136,11 +133,9 @@ def run():
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
-            else:
-                print 'Key', event.key
-
+            #else:
+                #print 'Key', event.key
             #pygame.event.clear(pygame.KEYUP)
-
         elif event.type == pygame.VIDEORESIZE:
             screen.change_size((event.w, event.h))
             slide.refresh()
@@ -152,7 +147,6 @@ def run():
             pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
         else:
             pass
-            #print event
 
 if __name__ == '__main__':
     run()
