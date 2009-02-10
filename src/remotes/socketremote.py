@@ -1,22 +1,40 @@
 import config
-from threading import Thread
-from plugins import IPlugin
-import pygame
-from pygame.event import Event
-import time
+from remotebase import *
+import socket
 
-class SocketRemote(Thread):   
+class SocketRemote(RemoteBase):
    
-   def __init__ (self):
-    Thread.__init__(self)
-    self.daemon = True
-    self._socket = None
-   
-   def run(self):
-       while True:
-           time.sleep(3)
-           print "Voy"
-           pygame.event.post(Event(pygame.KEYUP, key=281, mod=None))
+    def __init__ (self):
+        RemoteBase.__init__(self)
+
+    def send(self, client, data):
+        client.send(data)
+
+    def recv(self, client, bytes):
+        read = ""
+        while len(read) < bytes:
+            read = read + client.recv(bytes)
+        return read
+
+    def close(self, client):
+        client.close()
+        
+    def initialize(self):
+        self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_sock.bind(("",48151))
+        self.server_sock.listen(1)
+
+        print "sockname", self.server_sock.getsockname()
+        self.port = self.server_sock.getsockname()[1]
+
+    def wait_connection(self):
+        print "Waiting for connection on port %d" % self.port
+        client_sock, client_info = self.server_sock.accept()
+        print "Got connection from ", client_info
+        return client_sock, client_info
+
+    def shutdown(self):
+        self.server_sock.close()
 
 
 if config.getbool('remote:socket',  'enabled'):
