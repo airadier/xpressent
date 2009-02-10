@@ -239,13 +239,13 @@ def run():
     try:
         if len(sys.argv) == 3 and sys.argv[1].lower() == '-s':
             client = SocketClient(sys.argv[2:], screen)
+            connect = client.connect()        
         elif len(sys.argv) in (2,3) and sys.argv[1].lower() == '-b':
             client = BluetoothClient(sys.argv[2:], screen)
+            connect = client.connect()        
         else:
             print "Usage: %s [-f] (-b [btaddr] | -s host:port)" % (os.path.basename(sys.argv[0]),)
             print
-            sys.exit(-1)
-        connect = client.connect()        
     except:
         traceback.print_exc()
         
