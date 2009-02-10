@@ -7,6 +7,7 @@ import config
 import remotes
 import plugins
 import threading
+import traceback
 from datetime import datetime
 from pdfmanager import *
 from slidemanager import *
@@ -100,10 +101,9 @@ def run():
         pdf_file = notes.get_pdf_file()
         doc = PDFManager(pdf_file, config.quality)
         slide = SlideManager(screen, notes, doc)
-    except Exception, ex:
-        print ex.message
-        print
-        sys.exit(-1)
+    except:
+        traceback.print_exc() 
+        sys.exit(-1) 
     
     while True:
         event = pygame.event.wait()

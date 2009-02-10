@@ -91,7 +91,7 @@ class XPDFManager(PDFManagerBase):
         self.pdfinfoexe = os.path.join(self.xpdfpath, 'pdfinfo')
         self.pdftoppmexe = os.path.join(self.xpdfpath, 'pdftoppm')
         
-        pipe = Popen("%s %s" % (self.pdfinfoexe, pdf_file),
+        pipe = Popen((self.pdfinfoexe, pdf_file),
             stdout=PIPE, stderr=PIPE, universal_newlines = True)
         pipe.wait()
         info_lines = pipe.stdout.read().splitlines()
@@ -117,8 +117,12 @@ class XPDFManager(PDFManagerBase):
         pipe = Popen(cmdargs, stdout=PIPE, stderr=PIPE, universal_newlines = True)
         pipe.wait()
 
-        img = pygame.image.load('tmpslide-%06d.ppm' % (page_num + 1))
-        os.unlink('tmpslide-%06d.ppm' % (page_num + 1))
+        if os.path.exists('tmpslide-%06d.ppm' % (page_num + 1)):
+            tmpfile = 'tmpslide-%06d.ppm' % (page_num + 1)
+        else:
+            tmpfile = 'tmpslide-%02d.ppm' % (page_num + 1)
+        img = pygame.image.load(tmpfile)
+        os.unlink(tmpfile)
         return img
     
 
@@ -132,4 +136,5 @@ if config.pdflib == 'poppler':
         print "poppler or cairo libraries missing, using XPDF"
 
 if not PDFManager:
+    print "Using XPDF"
     PDFManager = XPDFManager

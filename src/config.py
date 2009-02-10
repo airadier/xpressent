@@ -78,7 +78,7 @@ if not conf_file.has_section(SECTION_XPDF):
     conf_file.add_section(SECTION_XPDF)
 
 if not conf_file.has_option(SECTION_XPDF, OPTION_XPDFPATH):
-    conf_file.set(SECTION_XPDF, OPTION_XPDFPATH, 'xpdf')
+    conf_file.set(SECTION_XPDF, OPTION_XPDFPATH, '')
 xpdfpath = conf_file.get(SECTION_XPDF, OPTION_XPDFPATH)
 
 window_size = (400,240)
