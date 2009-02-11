@@ -8,14 +8,12 @@ import inspect
 CONFIG_FILE = 'xpressent.conf'
 
 SECTION_DISPLAY = 'display'
-
 OPTION_PDFLIB = 'pdflib'
 OPTION_FULLSCREEN = 'fullscreen'
 OPTION_KEEP_ASPECT = 'keep_aspect'
 OPTION_QUALITY = 'quality'
 
 SECTION_SLIDESHOW = 'slideshow'
-
 OPTION_PRELOAD = 'preload'
 OPTION_CACHE_SIZE = 'cache_size'
 
@@ -32,7 +30,6 @@ for config_path in (
 
     if os.path.exists(config_path): conf_file.read(CONFIG_FILE)
 
-
 def get(section, option, default=None):
     if not conf_file.has_section(section):
         conf_file.add_section(section)
@@ -43,13 +40,16 @@ def get(section, option, default=None):
 def getbool(section, option, default=None):
     return get(section, option, default).lower() in ('true', '1', 'enable' , 'yes')
 
+###############################
+### Section Display
+###############################
+
 if not conf_file.has_section(SECTION_DISPLAY):
     conf_file.add_section(SECTION_DISPLAY)
 
 if not conf_file.has_option(SECTION_DISPLAY, OPTION_PDFLIB):
     conf_file.set(SECTION_DISPLAY, OPTION_PDFLIB, 'poppler')
 pdflib = conf_file.get(SECTION_DISPLAY, OPTION_PDFLIB)
-
 
 if not conf_file.has_option(SECTION_DISPLAY, OPTION_FULLSCREEN):
     conf_file.set(SECTION_DISPLAY, OPTION_FULLSCREEN, repr(False))
@@ -63,6 +63,10 @@ if not conf_file.has_option(SECTION_DISPLAY, OPTION_QUALITY):
     conf_file.set(SECTION_DISPLAY, OPTION_QUALITY, repr(1.0))
 quality = conf_file.getfloat(SECTION_DISPLAY, OPTION_QUALITY)
 
+###############################
+### Section SlideShow
+###############################
+
 if not conf_file.has_section(SECTION_SLIDESHOW):
     conf_file.add_section(SECTION_SLIDESHOW)
 
@@ -74,11 +78,19 @@ if not conf_file.has_option(SECTION_SLIDESHOW, OPTION_CACHE_SIZE):
     conf_file.set(SECTION_SLIDESHOW, OPTION_CACHE_SIZE, repr(5))
 cache_size = conf_file.getint(SECTION_SLIDESHOW, OPTION_CACHE_SIZE)
 
+###############################
+### Section XPDF
+###############################
+
 if not conf_file.has_section(SECTION_XPDF):
     conf_file.add_section(SECTION_XPDF)
 
 if not conf_file.has_option(SECTION_XPDF, OPTION_XPDFPATH):
     conf_file.set(SECTION_XPDF, OPTION_XPDFPATH, '')
 xpdfpath = conf_file.get(SECTION_XPDF, OPTION_XPDFPATH)
+
+###############################
+### Others
+###############################
 
 window_size = (400,240)
