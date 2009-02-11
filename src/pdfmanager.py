@@ -95,10 +95,16 @@ class XPDFManager(PDFManagerBase):
             stdout=PIPE, stderr=PIPE, universal_newlines = True)
         pipe.wait()
         info_lines = pipe.stdout.read().splitlines()
+        errors = pipe.stderr.read()
+        
+        if errors:
+            raise Exception, errors
+        
         self.pdf_info = {}
         for line in info_lines:
             key = line[:line.find(':')]
             self.pdf_info[key] = line[line.find(':') + 1:].lstrip()
+        
         
         page_size = self.pdf_info['Page size'].split()
         self.page_size = (int(page_size[0]), int(page_size[2]))
