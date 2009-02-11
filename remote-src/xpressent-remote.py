@@ -10,7 +10,6 @@ import traceback
 from struct import pack, unpack
 from pygame.locals import *
 from pygame.event import Event
-from events import *
 from bluetooth import *
 
 if not pygame.font: print 'Warning, fonts disabled'
@@ -26,7 +25,6 @@ PKT_NEXTSLIDE = 3
 PKT_PREVSLIDE = 4
 PKT_NOTES = 5
 
-
 class Screen(object):
 
     def __init__(self, fullscreen, size=(800,480)):
@@ -36,7 +34,7 @@ class Screen(object):
         self.surface = None
 
     def set_videomode(self):
-        
+
         self.blit_lock.acquire()
         if not self.fullscreen:
             self.surface = pygame.display.set_mode(self.size)
@@ -62,9 +60,8 @@ class Screen(object):
     def clear(self):
         self.surface.fill((0,0,0))
 
-
 class BaseClient(threading.Thread):
-    
+
     def __init__(self, args, screen):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -87,9 +84,9 @@ class BaseClient(threading.Thread):
         self.screen.blit(self.slide,(
             (size[0]-slide_size[0])/2,
             (size[1]-slide_size[1])/2))
-        
+
         if self.show_notes: self.paint_notes()
-            
+
         self.screen.flip()
 
     def paint_notes(self):
@@ -128,7 +125,7 @@ class BaseClient(threading.Thread):
         self.send(pack("!ii", PKT_KEYPRESS, keycode))
 
     def run(self):
-                    
+
         size = self.screen.get_size()
         self.send(pack("!iiii", PROT_VERSION, PKT_HELLO, size[0], size[1]))
         version, = unpack("!i", self.recv(4))
@@ -139,7 +136,6 @@ class BaseClient(threading.Thread):
             print "Unexpected packet received"
             sys.exit(-1)
 
-        
         while True:
             pkt_type, = unpack("!i", self.sock.recv(4))
             if pkt_type == PKT_NOTES:
@@ -161,21 +157,20 @@ class BaseClient(threading.Thread):
 
     def recv(self, size):
         raise NotImplementedError
-    
+
     def send(self, data):
         raise NotImplementedError
-    
 
 class BluetoothClient(BaseClient):
     def connect(self):
-            
+
         if len(self.args) <1:
             print "No address specified, searching in all nearby devices..."
             addr = None
         else:
             addr = self.args[0]
             print "Searching Xpressent service in addr %s..." % addr        
-        
+
         service_matches = find_service(uuid = UUID, address = addr)
         if len(service_matches) == 0:
             print "Xpressent service not found"
@@ -188,18 +183,17 @@ class BluetoothClient(BaseClient):
 
         self.sock = BluetoothSocket(RFCOMM)
         self.sock.connect((first_match['host'], first_match['port']))
-            
+
         return True
 
     def recv(self, size):
         return self.sock.recv(size)
-    
+
     def send(self, data):
         return self.sock.send(data)
 
-
 class SocketClient(BaseClient):
-    
+
     def connect(self):
         addr = self.args[0].split(':')
         if len(addr) > 1:
@@ -208,20 +202,17 @@ class SocketClient(BaseClient):
         else:
             host = addr[0]
             port = 48151
-        
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, int(port)))
-            
+
         return True
 
     def recv(self, size):
         return self.sock.recv(size)
-    
+
     def send(self, data):
         return self.sock.send(data)
-
-
-
 
 def run():
 
@@ -248,7 +239,7 @@ def run():
             print
     except:
         traceback.print_exc()
-        
+
     if not connect: sys.exit(-1)
 
     screen.set_videomode()
