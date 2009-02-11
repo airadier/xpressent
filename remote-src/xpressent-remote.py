@@ -71,8 +71,11 @@ class BaseClient(threading.Thread):
         self.slide = None
         self.show_notes = False
         self.font = None
-        self.font_size = 40
+        self.font_size = None
         self.args = args
+        self.notes = ""
+        self.notes_surface = None
+        self.notes_offset = 0
 
     def repaint_slide(self):
         if self.show_notes:
@@ -91,15 +94,43 @@ class BaseClient(threading.Thread):
 
         self.screen.flip()
 
+    def get_lines(self, font, text, maxwidth):
+        lines = []
+        for line in text.split('\n'):
+            current_line = ""
+            for word in line.split(' '):
+                for x in range(len(word)):
+                    if font.size(current_line + ' ' + word[:x+1])[0] > maxwidth:
+                        lines.append(current_line)
+                        current_line = ""
+                        break
+                current_line = current_line + ' ' + word
+            lines.append(current_line)
+        return lines
+            
+
     def paint_notes(self):
-        #TODO: Improve
-        font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
-        y = 30
-        x = 30
-        for line in self.notes.split('\n'):
-            surf = font.render(line,True, (255,255,255))
-            self.screen.blit(surf, (x,y))
-            y = y + font.get_linesize()
+        screen_size = self.screen.get_size()
+        margin_x = self.screen.get_size()[0]/50
+        margin_y = self.screen.get_size()[1]/50
+        if not self.notes_surface:
+            if self.font_size == None:
+                self.font_size = self.screen.get_size()[1] / 15
+            font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
+            line_height = font.get_linesize()
+            
+            lines = self.get_lines(font, self.notes, screen_size[0] - (2*margin_x))
+            self.notes_surface = pygame.Surface(
+                (screen_size[0] - (2*margin_x),line_height*len(lines)),
+                flags=SRCALPHA)
+            
+            y  = 0
+            for line in lines:
+                line_surf = font.render(line, True, (255,255,255))
+                self.notes_surface.blit(line_surf, (0,y))
+                y = y + font.get_linesize()
+                
+        self.screen.blit(self.notes_surface,(margin_x,margin_y + self.notes_offset))
 
     def toggle_notes(self):
         self.show_notes = not self.show_notes
@@ -112,12 +143,28 @@ class BaseClient(threading.Thread):
         return read
 
     def decrease_font(self):
+        if not self.show_notes: return
         self.font_size = self.font_size - 5
         if self.font_size < 5: self.font_size = 5
+        self.notes_surface = None
         self.repaint_slide()
 
     def increase_font(self):
+        if not self.show_notes: return
         self.font_size = self.font_size + 5
+        self.notes_surface = None
+        self.repaint_slide()
+
+    def scroll(self, rel):
+        if not self.show_notes: return
+        if not self.notes_surface: return
+        
+        self.notes_offset = self.notes_offset + rel[1]
+        if self.notes_offset > 0:
+            self.notes_offset = 0
+        elif self.notes_offset < 0 - self.notes_surface.get_height():
+            self.notes_offset = 0 - self.notes_surface.get_height()
+            
         self.repaint_slide()
 
     def quit(self):
@@ -143,6 +190,7 @@ class BaseClient(threading.Thread):
             if pkt_type == PKT_NOTES:
                 notes_len, = unpack("!i", self.recv(4))
                 self.notes = str.decode(self.read_bytes(notes_len),'utf-8')
+                self.notes_surface = None
                 self.repaint_slide()
             elif pkt_type == PKT_CURRSLIDE:
                 slide_len, page_number = unpack("!ii", self.sock.recv(8))
@@ -248,7 +296,7 @@ def run():
     client.start()
 
     pygame.display.set_caption('xPressent Remote')
-    pygame.mouse.set_visible(False)
+    #pygame.mouse.set_visible(False)
 
     while True:
         event = pygame.event.wait()
@@ -274,13 +322,14 @@ def run():
                 client.decrease_font()
             else:
                 print 'Key', event.key
-
         elif event.type == pygame.MOUSEMOTION:
-            pygame.mouse.set_visible(True)
-            pygame.time.set_timer(EVENT_HIDEMOUSE, 1000)
-        elif event.type == EVENT_HIDEMOUSE:
-            pygame.mouse.set_visible(False)
-            pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
+            if event.buttons[0]:
+                client.scroll(event.rel)
+            #pygame.mouse.set_visible(True)
+            #pygame.time.set_timer(EVENT_HIDEMOUSE, 1000)
+        #elif event.type == EVENT_HIDEMOUSE:
+            #pygame.mouse.set_visible(False)
+            #pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
         else:
             pass
             #print event
