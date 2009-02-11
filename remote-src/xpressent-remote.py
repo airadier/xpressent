@@ -297,7 +297,7 @@ def run():
     client.start()
 
     pygame.display.set_caption('xPressent Remote')
-    #pygame.mouse.set_visible(False)
+    pygame.mouse.set_visible(False)
 
     while True:
         event = pygame.event.wait()
