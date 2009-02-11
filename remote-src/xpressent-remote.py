@@ -30,34 +30,27 @@ EVENT_HIDEMOUSE = pygame.USEREVENT + 1
 class Screen(object):
 
     def __init__(self, fullscreen, size=(800,480)):
-        self.blit_lock = threading.Lock()
         self.size = size
         self.fullscreen = fullscreen
         self.surface = None
 
     def set_videomode(self):
 
-        self.blit_lock.acquire()
         if not self.fullscreen:
             self.surface = pygame.display.set_mode(self.size)
         else:
             self.surface = pygame.display.set_mode(
                 pygame.display.list_modes()[0],
                 pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN)
-        self.blit_lock.release()
 
     def get_size(self):
         return self.surface.get_width(), self.surface.get_height()
 
     def blit(self, source, position):
-        self.blit_lock.acquire()
         self.surface.blit(source, position)
-        self.blit_lock.release()
 
     def flip(self):
-        self.blit_lock.acquire()
         pygame.display.flip()
-        self.blit_lock.release()
 
     def clear(self):
         self.surface.fill((0,0,0))
@@ -69,6 +62,7 @@ class BaseClient(threading.Thread):
         self.daemon = True
         self.screen = screen
         self.slide = None
+        self.slide_alpha = None
         self.show_notes = False
         self.font = None
         self.font_size = None
@@ -79,19 +73,18 @@ class BaseClient(threading.Thread):
 
     def repaint_slide(self):
         if self.show_notes:
-            self.slide.set_alpha(30)
+            slide = self.slide_alpha
         else:
-            self.slide.set_alpha(255)
+            slide = self.slide
 
         self.screen.clear()
         size = self.screen.get_size()
-        slide_size = self.slide.get_size()
-        self.screen.blit(self.slide,(
-            (size[0]-slide_size[0])/2,
-            (size[1]-slide_size[1])/2))
+        slide_size = slide.get_size()
+        self.screen.blit(slide,(
+                                (size[0]-slide_size[0])/2,
+                                (size[1]-slide_size[1])/2))
 
         if self.show_notes: self.paint_notes()
-
         self.screen.flip()
 
     def get_lines(self, font, text, maxwidth):
@@ -107,7 +100,7 @@ class BaseClient(threading.Thread):
                 current_line = current_line + ' ' + word
             lines.append(current_line)
         return lines
-            
+
 
     def paint_notes(self):
         screen_size = self.screen.get_size()
@@ -118,19 +111,19 @@ class BaseClient(threading.Thread):
                 self.font_size = self.screen.get_size()[1] / 15
             font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
             line_height = font.get_linesize()
-            
+
             lines = self.get_lines(font, self.notes, screen_size[0] - (2*margin_x))
             self.notes_surface = pygame.Surface(
                 (screen_size[0] - (2*margin_x),line_height*len(lines)),
                 flags=pygame.HWSURFACE)
             self.notes_surface.set_colorkey((0,0,0), pygame.RLEACCEL)
-            
+
             y  = 0
             for line in lines:
                 line_surf = font.render(line, True, (255,255,255))
                 self.notes_surface.blit(line_surf, (0,y))
                 y = y + font.get_linesize()
-                
+
         self.screen.blit(self.notes_surface,(margin_x,margin_y + self.notes_offset))
 
     def toggle_notes(self):
@@ -159,13 +152,13 @@ class BaseClient(threading.Thread):
     def scroll(self, rel):
         if not self.show_notes: return
         if not self.notes_surface: return
-        
+
         self.notes_offset = self.notes_offset + rel[1]
         if self.notes_offset > 0:
             self.notes_offset = 0
         elif self.notes_offset < 0 - self.notes_surface.get_height():
             self.notes_offset = 0 - self.notes_surface.get_height()
-            
+
         self.repaint_slide()
 
     def quit(self):
@@ -200,7 +193,13 @@ class BaseClient(threading.Thread):
                 f.write(slide_jpg)
                 f.seek(0)
                 self.slide = pygame.image.load(f, 'img.jpg')
+                self.slide.set_alpha(30)
+                self.slide_alpha = pygame.Surface(self.slide.get_size())
+                self.slide_alpha.blit(self.slide, (0,0))
+                self.slide.set_alpha(None)
                 f.close()
+                self.notes = ""
+                self.notes_offset = 0
                 self.repaint_slide()
 
     def connect(self):
@@ -220,7 +219,7 @@ class BluetoothClient(BaseClient):
             addr = None
         else:
             addr = self.args[0]
-            print "Searching Xpressent service in addr %s..." % addr        
+            print "Searching Xpressent service in addr %s..." % addr
 
         service_matches = find_service(uuid = UUID, address = addr)
         if len(service_matches) == 0:
@@ -281,10 +280,10 @@ def run():
     try:
         if len(sys.argv) == 3 and sys.argv[1].lower() == '-s':
             client = SocketClient(sys.argv[2:], screen)
-            connect = client.connect()        
+            connect = client.connect()
         elif len(sys.argv) in (2,3) and sys.argv[1].lower() == '-b':
             client = BluetoothClient(sys.argv[2:], screen)
-            connect = client.connect()        
+            connect = client.connect()
         else:
             print "Usage: %s [-f] (-b [btaddr] | -s host:port)" % (os.path.basename(sys.argv[0]),)
             print
