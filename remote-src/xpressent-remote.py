@@ -323,8 +323,15 @@ def run():
             else:
                 print 'Key', event.key
         elif event.type == pygame.MOUSEMOTION:
-            if event.buttons[0]:
-                client.scroll(event.rel)
+            motions = [event]
+            motions.extend(pygame.event.get(pygame.MOUSEMOTION))
+            total_rel = (0,0)
+            for motion_event in motions:
+                if event.buttons[0]:
+                    total_rel = (total_rel[0] + event.rel[0],
+                                 total_rel[1] + event.rel[1])
+            print len(motions)
+            client.scroll(total_rel)
             #pygame.mouse.set_visible(True)
             #pygame.time.set_timer(EVENT_HIDEMOUSE, 1000)
         #elif event.type == EVENT_HIDEMOUSE:
