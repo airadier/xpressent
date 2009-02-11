@@ -5,10 +5,7 @@ import sys
 import os
 import config
 import remotes
-import plugins
 import threading
-import traceback
-from datetime import datetime
 from pdfmanager import *
 from slidemanager import *
 from notesmanager import *
@@ -19,17 +16,6 @@ if not pygame.mixer: print 'Warning, sound disabled'
 
 #User defined pygame events
 EVENT_HIDEMOUSE = pygame.USEREVENT + 1
-
-if len(sys.argv) != 2:
-    print "Usage: %s xpr_file|pdf_file" % (sys.argv[0],)
-    print
-    sys.exit(-1)
-
-xpr_file = os.path.abspath(sys.argv[1])
-if not os.path.exists(xpr_file):
-    print "File %s not found" % (xpr_file,)
-    print
-    sys.exit(-1)
 
 class Screen(object):
         
@@ -87,13 +73,23 @@ class Screen(object):
 
 def run():
 
+    if len(sys.argv) != 2:
+        print "Usage: %s xpr_file | pdf_file" % (sys.argv[0],)
+        print
+        sys.exit(-1)
+
+    xpr_file = os.path.abspath(sys.argv[1])
+    if not os.path.exists(xpr_file):
+        print "File %s not found" % (xpr_file,)
+        print
+        sys.exit(-1)
+
     pygame.init()
-    window_size = config.window_size
-    
+    pygame.display.set_caption('xPressent')
+
+    window_size = config.window_size    
     fullscreen = config.fullscreen
     screen = Screen(fullscreen, window_size)
-
-    pygame.display.set_caption('xPressent')
     pygame.mouse.set_visible(False)
 
     try:
@@ -102,7 +98,8 @@ def run():
         doc = PDFManager(pdf_file, config.quality)
         slide = SlideManager(screen, notes, doc)
     except:
-        traceback.print_exc() 
+        print sys.exc_info()[1]
+        #traceback.print_exc() 
         sys.exit(-1) 
     
     while True:
@@ -110,8 +107,6 @@ def run():
         
         if event.type == pygame.QUIT:
             sys.exit(0)
-        elif event.type == pygame.KEYDOWN:
-            pass
         elif event.type == pygame.KEYUP:
             if event.key == 102:
                 #F key, toggle fullscreen
@@ -145,8 +140,6 @@ def run():
         elif event.type == EVENT_HIDEMOUSE:
             pygame.mouse.set_visible(False)
             pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
-        else:
-            pass
 
 if __name__ == '__main__':
     run()
