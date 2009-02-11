@@ -25,6 +25,8 @@ PKT_NEXTSLIDE = 3
 PKT_PREVSLIDE = 4
 PKT_NOTES = 5
 
+EVENT_HIDEMOUSE = pygame.USEREVENT + 1
+
 class Screen(object):
 
     def __init__(self, fullscreen, size=(800,480)):
