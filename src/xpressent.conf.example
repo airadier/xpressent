@@ -1,0 +1,104 @@
+######################################################
+# XPRESSENT EXAMPLE CONFIGURATION FILE
+######################################################
+#
+# Config will be searched in:
+#
+#   1) $HOME/.xpressent/xpressent.conf
+#   2) /etc/xpressent.conf
+#   3) xpressent.conf in xpressent folder
+#
+
+##############################
+# Display section
+##############################
+
+[display]
+
+#keep_aspect = True | False
+#If set to False, slides will be enlarged to fit the full screen or window. 
+keep_aspect = True
+
+#fullscreen = True | False
+#Enabled fullscreen mode at start
+fullscreen = False
+
+#Render quality. Must be > 0.0 (default is 1.0, 100%). The slides will
+#be rendered at the specified fraction of the current screen or window
+#resolution, and then scaled to the screen
+quality = 1.0
+
+#pdflib = poppler | xpdf
+#Use libpoppler, or external XPDF utilities to render the PDF slides
+pdflib = poppler
+
+##############################
+# XPDF section
+##############################
+
+[xpdf]
+
+#xpdfpath = C:\Program Files\XPDF | /usr/bin | ...
+#Set the path where the 'pdfinfo' and 'pdftoppm' executables are located.
+#Leave blank if XPDF is in the path
+xpdfpath=
+
+##############################
+# Slideshow section
+##############################
+[slideshow]
+
+#cache_size = N
+#Number of slides to keep in memory (won't need to render them again,
+#resulting of faster page changes
+cache_size = 5
+
+#preload = P < N - 1
+#Number of slides to preload in background in advance. Must be smaller
+#than the cache_size option minus 1
+preload = 1
+
+##############################
+# Remtes section
+##############################
+
+[remote:socket]
+
+#enabled = True | False
+#Enable or disable the socket remote controller
+enabled = True
+
+#known_addresses = x.x.x.x, y.y.y.y, ...
+#A comma separated list of known addresses, allowed to connect
+#as a remote controller
+known_addresses = 
+
+#known_action = accept | ask | deny
+#What to do when a known address tries to connect. Ask for permission,
+#accept connection, or deny it. Defaults to 'accept'
+known_action = accept
+
+#unknown_action = accept | ask | deny
+#What to do when an unknown address tries to connect. Ask for permission,
+#accept connection, or deny it. Defaults to 'deny'
+
+[remote:bluetooth]
+
+#enabled = True | False
+#Enable or disable the Bluetooth remote controller
+enabled = True
+
+#known_addresses = xx:xx:xx:xx:xx:xx, yy:yy:yy:yy:yy:yy, ...
+#A comma separated list of bluetooth devices known addresses,
+#allowed to connect as a remote controller
+known_addresses = 
+
+#known_action = accept | ask | deny
+#What to do when a known address tries to connect. Ask for permission,
+#accept connection, or deny it. Defaults to 'accept'
+known_action = accept
+
+#unknown_action = accept | ask | deny
+#What to do when an unknown address tries to connect. Ask for permission,
+#accept connection, or deny it. Defaults to 'deny'
+unknown_action = deny
