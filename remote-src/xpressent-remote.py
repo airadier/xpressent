@@ -122,7 +122,8 @@ class BaseClient(threading.Thread):
             lines = self.get_lines(font, self.notes, screen_size[0] - (2*margin_x))
             self.notes_surface = pygame.Surface(
                 (screen_size[0] - (2*margin_x),line_height*len(lines)),
-                flags=SRCALPHA)
+                flags=pygame.HWSURFACE)
+            self.notes_surface.set_colorkey((0,0,0), pygame.RLEACCEL)
             
             y  = 0
             for line in lines:
