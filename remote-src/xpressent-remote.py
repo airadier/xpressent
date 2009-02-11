@@ -330,7 +330,6 @@ def run():
                 if event.buttons[0]:
                     total_rel = (total_rel[0] + event.rel[0],
                                  total_rel[1] + event.rel[1])
-            print len(motions)
             client.scroll(total_rel)
             #pygame.mouse.set_visible(True)
             #pygame.time.set_timer(EVENT_HIDEMOUSE, 1000)
