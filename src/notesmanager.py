@@ -3,14 +3,16 @@ import os
 class NotesManager():
     
     def __init__(self, file):
+        self.notes = []
+
         f = open(file, "r")
         signature = f.read(4).lower()
-        self.notes = []
         if signature != '%xpr':
+            print "%s is not a XPR file" % file
             self.pdf_file = file
             f.close()
             return
-        
+
         self.pdf_file = os.path.splitext(file)[0] + ".pdf"
         
         current_note = u""

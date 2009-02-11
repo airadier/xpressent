@@ -21,6 +21,7 @@ class SocketRemote(RemoteBase):
             self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_sock.bind(("",48151))
             self.server_sock.listen(1)
+            self.addr = self.server_sock.getsockname()[0]
             self.port = self.server_sock.getsockname()[1]
             return True
         except Exception, ex:
@@ -28,7 +29,7 @@ class SocketRemote(RemoteBase):
             return False
 
     def wait_connection(self):
-        print "Waiting for connection on port %d" % self.port
+        print "Waiting for socket connection on %s port %d" % (self.addr, self.port)
         client_sock, client_info = self.server_sock.accept()
         print "Got connection from ", client_info
         return client_sock, client_info
@@ -38,6 +39,6 @@ class SocketRemote(RemoteBase):
 
 
 if config.getbool('remote:socket',  'enabled'):
-    print "Enabling socket remote"
+    print "Enabling Socket remote"
     remote = SocketRemote()
     remote.start()

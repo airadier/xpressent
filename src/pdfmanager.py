@@ -79,6 +79,12 @@ class XPDFManager(PDFManagerBase):
     def __init__(self, pdf_file, quality):
         PDFManagerBase.__init__(self, pdf_file, quality)
         
+        f = open(pdf_file, "r")
+        signature = f.read(4).lower()
+        f.close()
+        if signature != '%pdf':
+            raise Exception("%s is not a PDF file" % pdf_file)
+                
         if not config.xpdfpath:
             self.xpdfpath = ''
         elif os.path.isabs(config.xpdfpath):
@@ -138,9 +144,10 @@ if config.pdflib == 'poppler':
         import poppler
         import cairo
         PDFManager = PopplerPDFManager
+        print "Using Poppler for PDF rendering"
     except ImportError:
-        print "poppler or cairo libraries missing, using XPDF"
+        print "Poppler or Cairo libraries missing, using alternate renderer"
 
 if not PDFManager:
-    print "Using XPDF"
     PDFManager = XPDFManager
+    print "Using XPDF for PDF rendering"

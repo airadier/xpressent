@@ -25,7 +25,7 @@ class BluetoothRemote(RemoteBase):
             self.server_sock.bind(("",PORT_ANY))
             self.server_sock.listen(1)
 
-            print "sockname", self.server_sock.getsockname()
+            self.addr = self.server_sock.getsockname()[0]
             self.port = self.server_sock.getsockname()[1]
 
             advertise_service( self.server_sock, "XPressent Remote Server",
@@ -38,7 +38,7 @@ class BluetoothRemote(RemoteBase):
             return False
         
     def wait_connection(self):
-        print "Waiting for connection on RFCOMM channel %d" % self.port
+        print "Waiting for Bluetooth RFCOMM connection on %s channel %d" % (self.addr, self.port)
         client_sock, client_info = self.server_sock.accept()
         print "Got connection from ", client_info
         return client_sock, client_info
@@ -48,6 +48,6 @@ class BluetoothRemote(RemoteBase):
         self.server_sock.close()
 
 if config.getbool('remote:bluetooth',  'enabled'):
-    print "Enabling bluetooth remote"
+    print "Enabling Bluetooth remote"
     remote = BluetoothRemote()
     remote.start()
