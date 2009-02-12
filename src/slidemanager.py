@@ -11,6 +11,7 @@ class SlideManager(object):
         self.notes = notes
         self.pdf = pdf
         self.current_page = 0
+        self.current_slide = None
         self.direction = 1
         self.slide_cache = []
         self.refresh_pending = False
@@ -101,12 +102,7 @@ class SlideManager(object):
     def notify_load_finished(self, slide, page):
         #If user didn't change the current page, paint it
         if page == self.current_page and not self.refresh_pending:
-            self.screen.acquire()
-            size = self.screen.get_size()
-            self.screen.clear()
-            self.screen.blit(slide, ((size[0] - slide.get_width()) / 2, (size[1] - slide.get_height()) / 2))
-            self.screen.flip()
-            self.screen.release()
+            self.repaint(slide)
             notes = self.notes.get_notes(self.current_page)
             fire_event(EVENT_SLIDECHANGE, (self, self.current_page, slide, notes))
             return True
@@ -142,6 +138,22 @@ class SlideManager(object):
     def refresh(self):
         self.clear_cache()
         self.update_display()
+
+    def repaint(self, slide=None):
+        self.screen.acquire()
+        if not slide: slide = self.current_slide
+        if not slide:
+            self.screen.release()
+            return
+        size = self.screen.get_size()
+        slide_size = slide.get_size()
+        self.screen.clear()
+        self.screen.blit(slide, (
+            (size[0] - slide_size[0]) / 2,
+            (size[1] - slide_size[1]) / 2))
+        self.screen.flip()
+        self.current_slide = slide
+        self.screen.release()
 
 
 class SlideLoader(Thread):

@@ -18,19 +18,22 @@ if not pygame.mixer: print 'Warning, sound disabled'
 EVENT_HIDEMOUSE = pygame.USEREVENT + 1
 
 class Screen(object):
-        
+
     def __init__(self, fullscreen, window_size):
         self.window_size = window_size
-        self.size_lock = threading.RLock() 
+        self.size_lock = threading.RLock()
         self.blit_lock = threading.Lock()
         self.surface = self.set_videomode(fullscreen, window_size)
-    
+        self.paint_overlay = True
+
     def set_videomode(self,fullscreen, window_size):
         self.size_lock.acquire()
         self.blit_lock.acquire()
         surface = pygame.display.set_mode(
             pygame.display.list_modes()[0] if fullscreen else window_size,
             pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE | (pygame.FULLSCREEN if fullscreen else False))
+        self.overlay = pygame.Surface(surface.get_size(), flags=RLEACCEL)
+        self.overlay.set_colorkey((0,0,0))
         self.blit_lock.release()
         self.size_lock.release()
         return surface
@@ -38,7 +41,7 @@ class Screen(object):
 
     def set_fullscreen(self, fullscreen):
         self.set_videomode(fullscreen, self.window_size)
-        
+
     def change_size(self, size):
         self.window_size = size
         self.size_lock.acquire()
@@ -56,18 +59,33 @@ class Screen(object):
 
     def blit(self, source, position):
         self.blit_lock.acquire()
+        self.surface.unlock()
+        source.unlock()
         self.surface.blit(source, position)
         self.blit_lock.release()
-        
+
     def flip(self):
         self.blit_lock.acquire()
+        if self.paint_overlay:
+            self.surface.blit(self.overlay,(0,0))
         pygame.display.flip()
         self.blit_lock.release()
 
+    def toggle_overlay(self):
+        self.paint_overlay = not self.paint_overlay
+
+    def draw(self, from_pos, to_pos):
+        pygame.draw.line(self.overlay,
+            (255,0,0), from_pos, to_pos, 5)
+        self.paint_overlay = True
+
+    def clear_overlay(self):
+        self.overlay.fill((0,0,0))
+        self.paint_overlay = False
 
     def acquire(self):
         self.size_lock.acquire()
-       
+
     def release(self):
         self.size_lock.release()
 
@@ -87,9 +105,10 @@ def run():
     pygame.init()
     pygame.display.set_caption('xPressent')
 
-    window_size = config.window_size    
+    window_size = config.window_size
     fullscreen = config.fullscreen
     screen = Screen(fullscreen, window_size)
+    prev_pos = None
     pygame.mouse.set_visible(False)
 
     try:
@@ -99,12 +118,12 @@ def run():
         slide = SlideManager(screen, notes, doc)
     except:
         print sys.exc_info()[1]
-        #traceback.print_exc() 
-        sys.exit(-1) 
-    
+        #traceback.print_exc()
+        sys.exit(-1)
+
     while True:
         event = pygame.event.wait()
-        
+
         if event.type == pygame.QUIT:
             sys.exit(0)
         elif event.type == pygame.KEYUP:
@@ -115,28 +134,57 @@ def run():
                 slide.refresh()
             elif event.key in (278, ):
                 #Home
+                screen.clear_overlay()
                 slide.move_home()
             elif event.key in (279, ):
                 #End
+                screen.clear_overlay()
                 slide.move_end()
             elif event.key in (281,275):
                 #Next page
+                screen.clear_overlay()
                 slide.move_next_page()
             elif event.key in (280,276):
                 #Previous page
+                screen.clear_overlay()
                 slide.move_prev_page()
             elif event.key == 27:
                 #Escape key, exit
                 sys.exit(0)
-            #else:
-                #print 'Key', event.key
+            elif event.key == 99:
+                #'C' Key
+                screen.clear_overlay()
+                slide.repaint()
+            elif event.key == 104:
+                #'H' Key
+                screen.toggle_overlay()
+                slide.repaint()
+            else:
+                print 'Key', event.key
             #pygame.event.clear(pygame.KEYUP)
         elif event.type == pygame.VIDEORESIZE:
             screen.change_size((event.w, event.h))
             slide.refresh()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                prev_pos = event.pos
+            elif event.button == 3:
+                screen.clear_overlay()
+                slide.repaint()
+
         elif event.type == pygame.MOUSEMOTION:
             pygame.mouse.set_visible(True)
             pygame.time.set_timer(EVENT_HIDEMOUSE, 3000)
+            motions = [event]
+            motions.extend(pygame.event.get(pygame.MOUSEMOTION))
+            if not prev_pos: prev_pos = event.pos
+            repaint = False
+            for ev in motions:
+                if ev.buttons[0]:
+                    screen.draw(prev_pos, ev.pos)
+                    prev_pos = ev.pos
+                    repaint = True
+            if repaint or True: slide.repaint()
         elif event.type == EVENT_HIDEMOUSE:
             pygame.mouse.set_visible(False)
             pygame.time.set_timer(EVENT_HIDEMOUSE, 0)
