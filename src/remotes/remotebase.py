@@ -5,7 +5,7 @@ import cStringIO
 import traceback
 from struct import pack, unpack
 from pygame.event import Event
-from threading import Thread
+from threading import Thread, Lock
 from plugins.IPlugin import *
 
 PROT_VERSION = 1
@@ -35,6 +35,8 @@ class RemoteBase(Thread):
         self.current_notes = None
         self.slidemanager = None
         self.page_number = None
+        
+        self.thread_lock = Lock()
 
     def get_aspect_size(self, screen_size, page_size):
         """Calculate a render size that fits in 'screen_size' and keeps the
@@ -58,6 +60,7 @@ class RemoteBase(Thread):
         """Event fired when the current slide has changed"""
         if not slidemanager: return
         
+        
         #Scale slide to fit the client with
         slide = pygame.transform.scale(
             slide,
@@ -70,13 +73,15 @@ class RemoteBase(Thread):
         slide_jpg = f.getvalue()
         f.close()
 
+        self.thread_lock.acquire()
         #Send current slide JPEG to all clients
         for client in [client] if client else self.clients:
             try:
                 self.send(client, pack("!iii", PKT_CURRSLIDE, len(slide_jpg), page_number))
                 self.send(client, slide_jpg)
             except IOError:
-                traceback.print_exc()
+                #traceback.print_exc()
+                #self.clients.remove(client)
                 self.close(client)
 
         #Send notes to all clients
@@ -86,8 +91,11 @@ class RemoteBase(Thread):
                 self.send(client, pack("!ii", PKT_NOTES, len(notes_utf)))
                 self.send(client, notes_utf)
             except IOError:
-                traceback.print_exc()
+                #traceback.print_exc()
+                #self.clients.remove(client)
                 self.close(client)
+        self.thread_lock.release()
+
 
         #Save current data for other clients
         self.slidemanager = slidemanager
@@ -96,6 +104,12 @@ class RemoteBase(Thread):
         self.page_number = page_number
 
 
+    def recv_bytes(self, client, amount):
+        data = ""
+        while len(data) < amount:
+            data = data + self.recv(client, amount-len(data))
+        return data
+        
     def run(self):
 
         #Register remote as event listener
@@ -110,16 +124,16 @@ class RemoteBase(Thread):
             try:
                 #When client connects, send HELLO packet, and check versions
                 self.send(client, pack("!ii", PROT_VERSION, PKT_HELLO))
-                version, = unpack("!i", self.recv(client, 4))
+                version, = unpack("!i", self.recv_bytes(client, 4))
                 if version > PROT_VERSION:
                     print "Unsupported client version: %d", version
                     raise IOError
-                if unpack("!i", self.recv(client, 4))[0] != PKT_HELLO:
+                if unpack("!i", self.recv_bytes(client, 4))[0] != PKT_HELLO:
                     print "Unexpected message received"
                     raise IOError
 
                 #Get client screen size
-                self.client_size = unpack("!ii", self.recv(client, 8))
+                self.client_size = unpack("!ii", self.recv_bytes(client, 8))
                 self.clients.append(client)
 
                 #Send current slide to client, firing slide_change event
@@ -127,18 +141,21 @@ class RemoteBase(Thread):
                     self.current_slide, self.current_notes, client = client)
 
                 while True:
-                    pkt_type, = unpack("!i", self.recv(client, 4))
+                    pkt_type, = unpack("!i", self.recv_bytes(client, 4))
 
                     #If we get the KEYPRESS packet, fire a keypress event
                     if pkt_type == PKT_KEYPRESS:
-                        key, = unpack("!i", self.recv(client, 4))
+                        key, = unpack("!i", self.recv_bytes(client, 4))
                         pygame.event.post(Event(pygame.KEYUP, key=key, mod=None))
 
             except IOError:
                 print "IOError:"
                 traceback.print_exc()
-            except Exception:
+            except SystemError:
                 pass
+            except Exception:
+                print "Error:"
+                traceback.print_exc()
 
             print "Client Disconnected:", client_info
 
