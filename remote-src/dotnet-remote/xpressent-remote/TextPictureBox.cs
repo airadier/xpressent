@@ -40,6 +40,7 @@ namespace xpressent_remote
 			set
 			{
 				this.notes = value;
+				this.notesOffset = 0;
 				DrawNotes();
 				DrawOffscreen();
 				this.Invalidate();
@@ -129,6 +130,7 @@ namespace xpressent_remote
 		{
 
 			if (this.offscreen == null) offscreen = new Bitmap(this.Width, this.Height);
+			
 			Bitmap off = this.offscreen;
 			Graphics g = Graphics.FromImage(off);
 
@@ -147,7 +149,7 @@ namespace xpressent_remote
 				ImageAttributes attr = new ImageAttributes();
 				attr.SetColorKey(Color.Black, Color.Black);
 				g.DrawImage(this.notesBitmap,
-					new Rectangle(5,5+this.notesOffset, this.notesBitmap.Width, this.notesBitmap.Height),
+					new Rectangle(5,5 + this.notesOffset, this.notesBitmap.Width, this.notesBitmap.Height),
 					0, 0, this.notesBitmap.Width, this.notesBitmap.Height, GraphicsUnit.Pixel,attr);
 			}
 			else
@@ -167,7 +169,6 @@ namespace xpressent_remote
 
 		protected override void OnPaintBackground(PaintEventArgs e)
 		{
-			e.Graphics.Clear(Color.Black);
 		}
 
 
@@ -230,11 +231,11 @@ namespace xpressent_remote
 		private void TextPictureBox_MouseMove(object sender, MouseEventArgs e)
 		{
 			if (e.Y != this.lastMousePos) this.dragged = true;
-			if (!this.dragging || !this.showNotes) return;
+			if (!this.dragging || !this.showNotes || this.notesBitmap == null) return;
 
 			this.notesOffset += e.Y - this.lastMousePos;
-			if (notesOffset < 0) notesOffset = 0;
-			if (notesOffset > this.Height) notesOffset = this.Height;
+			if (notesOffset > 0) this.notesOffset = 0;
+			if (notesOffset < 0 - this.notesBitmap.Height) notesOffset = 0 - this.notesBitmap.Height;
 			this.lastMousePos = e.Y;
 
 			DrawOffscreen();
