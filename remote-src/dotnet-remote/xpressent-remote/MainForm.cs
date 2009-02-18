@@ -27,7 +27,7 @@ namespace xpressent_remote
 		BluetoothDevice btDev = null;
 		NetworkStream sock = null;
 		Thread protocolThread;
-		Image currentSlide;
+		Bitmap currentSlide;
 		string currentNotes;
 
 		public MainForm()
@@ -62,6 +62,7 @@ namespace xpressent_remote
 			}
 
 			this.startProtocol();
+
 
 		}
 
@@ -132,10 +133,10 @@ namespace xpressent_remote
 		}
 
 		private delegate void showErrorDelegate(string err);
-		private delegate void setImageDelegate(Image img);
+		private delegate void setImageDelegate(Bitmap img);
 		private delegate void setNotesDelegate(string notes);
 
-		private void setImage(Image img)
+		private void setImage(Bitmap img)
 		{
 			if (this.InvokeRequired)
 			{
@@ -144,7 +145,8 @@ namespace xpressent_remote
 			else
 			{
 				this.currentSlide = img;
-				this.pictureBox.Image = img;
+				this.pictureBox.ShowNotes = false;
+				this.pictureBox.Image = currentSlide;
 			}
 		}
 
@@ -157,7 +159,7 @@ namespace xpressent_remote
 			else
 			{
 				this.currentNotes = notes;
-				this.textNotes.Text = notes;
+				this.pictureBox.Text = notes;
 			}
 		}
 
@@ -246,24 +248,19 @@ namespace xpressent_remote
 
 		private void toggleNotes()
 		{
-			this.textNotes.Visible = !this.textNotes.Visible;
-			this.pictureBox.Visible = !this.pictureBox.Visible;
+			this.pictureBox.ShowNotes = !this.pictureBox.ShowNotes;
 		}
 
-		private void menuNotes_Click(object sender, EventArgs e)
-		{
-			toggleNotes();
-		}
 
 		private void MainForm_KeyDown(object sender, KeyEventArgs e)
 		{
 			if ((e.KeyCode == System.Windows.Forms.Keys.Up))
 			{
+				this.pictureBox.TextSize++;
 			}
 			if ((e.KeyCode == System.Windows.Forms.Keys.Down))
 			{
-				// Bajar oscilador
-				// Bajar
+				this.pictureBox.TextSize--;
 			}
 			if ((e.KeyCode == System.Windows.Forms.Keys.Left))
 			{
@@ -279,5 +276,12 @@ namespace xpressent_remote
 			}
 
 		}
+
+		private void menuPaint_Click(object sender, EventArgs e)
+		{
+			MessageBox.Show("Not implemented");
+		}
+
+
 	}
 }

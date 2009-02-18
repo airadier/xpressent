@@ -31,6 +31,7 @@
     <FileAlignment>512</FileAlignment>
     <WarningLevel>4</WarningLevel>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -79,6 +80,10 @@
       <SubType>Designer</SubType>
       <DependentUpon>SelectDevice.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="TextPictureBox.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TextPictureBox.cs</DependentUpon>
+    </EmbeddedResource>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
@@ -88,6 +93,9 @@
     </Compile>
     <Compile Include="SelectDevice.Designer.cs">
       <DependentUpon>SelectDevice.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TextPictureBox.cs">
+      <SubType>Component</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
