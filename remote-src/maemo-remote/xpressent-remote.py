@@ -193,7 +193,7 @@ class BaseClient(threading.Thread):
                 f.write(slide_jpg)
                 f.seek(0)
                 self.slide = pygame.image.load(f, 'img.jpg')
-                self.slide.set_alpha(30)
+                self.slide.set_alpha(25)
                 self.slide_alpha = pygame.Surface(self.slide.get_size())
                 self.slide_alpha.blit(self.slide, (0,0))
                 self.slide.set_alpha(None)
