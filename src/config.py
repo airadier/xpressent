@@ -24,11 +24,16 @@ conf_file = SafeConfigParser()
 module_path = os.path.dirname(inspect.getabsfile(sys.modules[__name__]))
 
 for config_path in (
-    os.path.join(home, '.xpressent', 'xpressent.conf', CONFIG_FILE),
+    os.path.join(home, '.' + CONFIG_FILE),
+    os.path.join(home, '.xpressent', CONFIG_FILE),
     os.path.join('/etc', CONFIG_FILE),
     os.path.join(module_path, CONFIG_FILE)):
 
-    if os.path.exists(config_path): conf_file.read(CONFIG_FILE)
+    print config_path
+    if os.path.exists(config_path): 
+        print "Reading: ",config_path
+        conf_file.read(config_path)
+        break
 
 def get(section, option, default=None):
     if not conf_file.has_section(section):
