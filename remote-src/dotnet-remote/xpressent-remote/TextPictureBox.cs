@@ -13,6 +13,7 @@ namespace xpressent_remote
 		Bitmap offscreen = null;
 		Bitmap image, darkImage;
 		Bitmap notesBitmap;
+		Icon prevBitmap, nextBitmap;
 		string notes = "";
 		int textSize = 11;
 		int notesOffset;
@@ -21,6 +22,10 @@ namespace xpressent_remote
 		bool dragging = false;
 		bool dragged = false;
 
+		public delegate void NextPrevEventDelegate();
+		public event NextPrevEventDelegate NextEvent;
+		public event NextPrevEventDelegate PrevEvent;
+
 		public Bitmap Image
 		{
 			get { return this.image; }
@@ -28,13 +33,14 @@ namespace xpressent_remote
 				this.image = value;
 				if (value != null)
 				{
-					this.darkImage = AdjustBrightness(this.Image, 10);
+					this.darkImage = AdjustBrightness(this.Image, 20);
 				}
 				else
 				{
 					this.darkImage = null;
 				}
-
+				this.notes = null;
+				this.showNotes = false;
 				DrawNotes();
 				DrawOffscreen();
 				this.Invalidate();
@@ -90,7 +96,9 @@ namespace xpressent_remote
 		public TextPictureBox()
 			: base()
 		{
+
 			this.InitializeComponent();
+
 		}
 
 		private string[] splitLines(Graphics g, Font f, string text, int maxwidth)
@@ -170,7 +178,11 @@ namespace xpressent_remote
 						(off.Width - this.image.Width) / 2,
 						(off.Height - this.image.Height) / 2);
 				}
+
 			}
+
+			g.DrawIcon(this.prevBitmap, 0, this.Height - this.prevBitmap.Height);
+			g.DrawIcon(this.nextBitmap, this.Width - this.nextBitmap.Width, this.Height - this.nextBitmap.Height);
 
 		}
 
@@ -218,6 +230,11 @@ namespace xpressent_remote
 		private void InitializeComponent()
 		{
 			this.SuspendLayout();
+
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TextPictureBox));
+			prevBitmap = (Icon)resources.GetObject("left_arrow_icon");
+			nextBitmap = (Icon)resources.GetObject("right_arrow_icon");
+
 			// 
 			// TextPictureBox
 			// 
@@ -239,7 +256,23 @@ namespace xpressent_remote
 		private void TextPictureBox_MouseUp(object sender, MouseEventArgs e)
 		{
 			if (e.Button == MouseButtons.Left) this.dragging = false;
-			if (!this.dragged) this.ShowNotes = !this.ShowNotes;
+			if (!this.dragged)
+			{
+				if (e.Y >= (this.Height - this.prevBitmap.Height) &&
+					e.X <= this.prevBitmap.Width)
+				{
+					if (this.PrevEvent != null) this.PrevEvent();
+				}
+				else if (e.Y >= (this.Height - this.nextBitmap.Height) &&
+					e.X >= this.Width - this.nextBitmap.Width)
+				{
+					if (this.NextEvent != null) this.NextEvent();
+				}
+				else
+				{
+					this.ShowNotes = !this.ShowNotes;
+				}
+			}
 		}
 
 		private void TextPictureBox_MouseMove(object sender, MouseEventArgs e)
@@ -258,8 +291,11 @@ namespace xpressent_remote
 
 		private void TextPictureBox_Resize(object sender, EventArgs e)
 		{
-			this.offscreen.Dispose();
-			this.offscreen = null;
+			if (this.offscreen != null)
+			{
+				this.offscreen.Dispose();
+				this.offscreen = null;
+			}
 			this.DrawNotes();
 			this.DrawOffscreen();
 			this.Invalidate();

@@ -78,7 +78,7 @@ namespace xpressent_remote
 		public void SendKey(int keyNum)
 		{
 			this.sendInt(PacketKeyPress);
-			this.sendInt(280);
+			this.sendInt(keyNum);
 		}
 
 		protected void startProtocol()
@@ -183,6 +183,13 @@ namespace xpressent_remote
 					break;
 				}
 			}
+
+			try
+			{
+				this.sock.Close();
+			}
+			catch { }
+			this.sock = null;
 
 		}
 

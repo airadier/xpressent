@@ -26,6 +26,7 @@ namespace xpressent_remote
 		{
 			SelectDevice dialog = new SelectDevice();
 			if (dialog.ShowDialog() != DialogResult.OK) return null;
+			if (dialog.SelectedDevice == null) return null;
 			return dialog.SelectedDevice.Device;
 		}
 
@@ -38,11 +39,15 @@ namespace xpressent_remote
 		private void updateDevices()
 		{
 			this.listDevices.Items.Clear();
-			foreach (BluetoothDevice btDevice in btRadio.PairedDevices)
+			try
 			{
-				BtDesc desc = new BtDesc(btDevice);
-				this.listDevices.Items.Add(desc);
+				foreach (BluetoothDevice btDevice in btRadio.PairedDevices)
+				{
+					BtDesc desc = new BtDesc(btDevice);
+					this.listDevices.Items.Add(desc);
+				}
 			}
+			catch { }
 		}
 
 		private void menuItem2_Click(object sender, EventArgs e)

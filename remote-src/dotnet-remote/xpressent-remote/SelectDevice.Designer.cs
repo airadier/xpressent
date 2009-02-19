@@ -64,7 +64,7 @@
 			// 
 			// menuItem1
 			// 
-			this.menuItem1.Text = "Exit";
+			this.menuItem1.Text = "Cancel";
 			this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
 			// 
 			// SelectDevice

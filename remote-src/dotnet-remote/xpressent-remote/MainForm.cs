@@ -24,17 +24,14 @@ namespace xpressent_remote
 
 			BluetoothDevice btDev = SelectDevice.Run();
 
-			if (btDev == null)
+			if (btDev != null)
 			{
-				this.Close();
-				return;
+				this.protocol = new XProtocol(btDev, this.pictureBox.Width, this.pictureBox.Height);
+				this.protocol.ErrorRaised += this.showError;
+				this.protocol.CurrentSlideReceived += this.setSlide;
+				this.protocol.NotesReceived += this.setNotes;
+				this.protocol.Connect();
 			}
-
-			this.protocol = new XProtocol(btDev, this.pictureBox.Width, this.pictureBox.Height);
-			this.protocol.ErrorRaised += this.showError;
-			this.protocol.CurrentSlideReceived += this.setSlide;
-			this.protocol.NotesReceived += this.setNotes;
-			this.protocol.Connect();
 
 		}
 
@@ -147,6 +144,21 @@ namespace xpressent_remote
 		private void menuPaint_Click(object sender, EventArgs e)
 		{
 			MessageBox.Show("Not implemented");
+		}
+
+		private void menuItem2_Click(object sender, EventArgs e)
+		{
+			selectDevice();
+		}
+
+		private void pictureBox_NextEvent()
+		{
+			this.menuNext_Click(null, null);
+		}
+
+		private void pictureBox_PrevEvent()
+		{
+			this.menuPrev_Click(null, null);
 		}
 
 
