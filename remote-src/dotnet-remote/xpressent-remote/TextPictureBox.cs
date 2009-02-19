@@ -26,7 +26,14 @@ namespace xpressent_remote
 			get { return this.image; }
 			set {
 				this.image = value;
-				this.darkImage = AdjustBrightness(this.Image, 10);
+				if (value != null)
+				{
+					this.darkImage = AdjustBrightness(this.Image, 10);
+				}
+				else
+				{
+					this.darkImage = null;
+				}
 
 				DrawNotes();
 				DrawOffscreen();
@@ -113,7 +120,7 @@ namespace xpressent_remote
 		{
 			Graphics g = this.CreateGraphics();
 			Font font = new Font(FontFamily.GenericSansSerif, this.textSize, 0);
-			string[] textLines = splitLines(g, font, this.notes, this.Width - 10);
+			string[] textLines = splitLines(g, font, this.notes ?? "", this.Width - 10);
 
 			string text = String.Join("\n", textLines);
 			if (this.notesBitmap != null) this.notesBitmap.Dispose();
@@ -138,9 +145,12 @@ namespace xpressent_remote
 
 			if (this.showNotes)
 			{
-				g.DrawImage(this.darkImage,
-					(off.Width - this.darkImage.Width) / 2,
-					(off.Height - this.darkImage.Height) / 2);
+				if (this.darkImage != null)
+				{
+					g.DrawImage(this.darkImage,
+						(off.Width - this.darkImage.Width) / 2,
+						(off.Height - this.darkImage.Height) / 2);
+				}
 				if (this.notesBitmap == null)
 				{
 					DrawNotes();
@@ -154,9 +164,12 @@ namespace xpressent_remote
 			}
 			else
 			{
-				g.DrawImage(this.image,
-					(off.Width - this.image.Width) / 2,
-					(off.Height - this.image.Height) / 2);
+				if (this.image != null)
+				{
+					g.DrawImage(this.image,
+						(off.Width - this.image.Width) / 2,
+						(off.Height - this.image.Height) / 2);
+				}
 			}
 
 		}
@@ -174,6 +187,7 @@ namespace xpressent_remote
 
 		private static unsafe Bitmap AdjustBrightness(Bitmap Bitmap, decimal Percent)
 		{
+
 			Percent /= 100;
 			Bitmap Snapshot = (Bitmap)Bitmap.Clone();
 			Rectangle rect = new Rectangle(0, 0, Bitmap.Width, Bitmap.Height);

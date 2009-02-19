@@ -97,6 +97,7 @@
     <Compile Include="TextPictureBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="XProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="xpressent.ico" />
