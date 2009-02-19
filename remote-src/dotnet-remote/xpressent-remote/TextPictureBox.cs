@@ -248,9 +248,23 @@ namespace xpressent_remote
 
 		private void TextPictureBox_MouseDown(object sender, MouseEventArgs e)
 		{
-			if (e.Button == MouseButtons.Left) this.dragging = true;
-			this.dragged = false;
-			this.lastMousePos = e.Y;
+			this.dragged = true;
+			if (e.Y >= (this.Height - this.prevBitmap.Height) &&
+				e.X <= this.prevBitmap.Width)
+			{
+				if (this.PrevEvent != null) this.PrevEvent();
+			}
+			else if (e.Y >= (this.Height - this.nextBitmap.Height) &&
+				e.X >= this.Width - this.nextBitmap.Width)
+			{
+				if (this.NextEvent != null) this.NextEvent();
+			}
+			else
+			{
+				if (e.Button == MouseButtons.Left) this.dragging = true;
+				this.dragged = false;
+				this.lastMousePos = e.Y;
+			}
 		}
 
 		private void TextPictureBox_MouseUp(object sender, MouseEventArgs e)
@@ -258,20 +272,7 @@ namespace xpressent_remote
 			if (e.Button == MouseButtons.Left) this.dragging = false;
 			if (!this.dragged)
 			{
-				if (e.Y >= (this.Height - this.prevBitmap.Height) &&
-					e.X <= this.prevBitmap.Width)
-				{
-					if (this.PrevEvent != null) this.PrevEvent();
-				}
-				else if (e.Y >= (this.Height - this.nextBitmap.Height) &&
-					e.X >= this.Width - this.nextBitmap.Width)
-				{
-					if (this.NextEvent != null) this.NextEvent();
-				}
-				else
-				{
-					this.ShowNotes = !this.ShowNotes;
-				}
+				this.ShowNotes = !this.ShowNotes;
 			}
 		}
 
