@@ -80,13 +80,13 @@ namespace xpressent_remote
 		private void menuPrev_Click(object sender, EventArgs e)
 		{
 			if (this.protocol != null)
-				this.protocol.SendKey(280);
+				this.protocol.NextSlide();
 		}
 
 		private void menuNext_Click(object sender, EventArgs e)
 		{
 			if (this.protocol != null)
-				this.protocol.SendKey(281);
+				this.protocol.PrevSlide();
 		}
 
 		private void toggleNotes()

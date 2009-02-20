@@ -92,7 +92,7 @@
 						| System.Windows.Forms.AnchorStyles.Right)));
 			this.pictureBox.Location = new System.Drawing.Point(0, 0);
 			this.pictureBox.Name = "pictureBox";
-			this.pictureBox.Size = new System.Drawing.Size(240, 268);
+			this.pictureBox.Size = new System.Drawing.Size(240, 294);
 			this.pictureBox.TabIndex = 0;
 			this.pictureBox.PrevEvent += new xpressent_remote.TextPictureBox.NextPrevEventDelegate(this.pictureBox_PrevEvent);
 			this.pictureBox.NextEvent += new xpressent_remote.TextPictureBox.NextPrevEventDelegate(this.pictureBox_NextEvent);
@@ -100,15 +100,17 @@
 			// MainForm
 			// 
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-			this.ClientSize = new System.Drawing.Size(240, 268);
+			this.ClientSize = new System.Drawing.Size(240, 294);
 			this.Controls.Add(this.pictureBox);
 			this.ForeColor = System.Drawing.Color.White;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.KeyPreview = true;
+			this.Location = new System.Drawing.Point(0, 0);
 			this.Menu = this.mainMenu;
 			this.MinimizeBox = false;
 			this.Name = "MainForm";
 			this.Text = "xPressent Remote";
+			this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
 			this.Load += new System.EventHandler(this.MainForm_Load);
 			this.Closing += new System.ComponentModel.CancelEventHandler(this.MainForm_Closing);
 			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);

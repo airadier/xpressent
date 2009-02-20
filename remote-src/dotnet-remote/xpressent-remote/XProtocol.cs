@@ -73,6 +73,17 @@ namespace xpressent_remote
 			}			
 		}
 
+		public void NextSlide()
+		{
+			this.SendKey(280);
+		}
+
+		public void PrevSlide()
+		{
+			this.SendKey(281);
+		}
+
+
 		public void SendKey(int keyNum)
 		{
 			this.sendInt(PacketKeyPress);
