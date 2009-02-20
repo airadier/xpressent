@@ -76,7 +76,8 @@ class RemoteBase(Thread):
             try:
                 client.send_slide(slide_jpg, notes.encode('utf-8'), page_number)
             except IOError:
-                client.close()
+                pass
+                #client.close()
         self.thread_lock.release()
 
         #Save current data for other clients
