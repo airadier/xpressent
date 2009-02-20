@@ -1,6 +1,6 @@
 %xpressent
 Slide 1
- * Please not that .xpr files must start with %xpressent string as first line on the file
+ * Please note that .xpr files must start with %xpressent string as first line on the file
  * Notes are displayed on the remote
 ----------------------
 Slide 2
