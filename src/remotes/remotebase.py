@@ -59,27 +59,24 @@ class RemoteBase(Thread):
         """Event fired when the current slide has changed"""
         if not slidemanager: return
                 
-        #Scale slide to fit the client with
-        slide = pygame.transform.scale(
-            slide,
-            self.get_aspect_size(self.client_size, slide.get_size()))
-        
-        #Convert slide to JPEG (use PIL instead of pygame, which needs version >=1.8
-        f = cStringIO.StringIO()
-        pil_img = Image.fromstring('RGB', slide.get_size(), pygame.image.tostring(slide, 'RGB'))
-        pil_img.save(f, 'JPEG', quality=15)
-        slide_jpg = f.getvalue()
-        f.close()
-
         self.thread_lock.acquire()
         #Send current slide JPEG to all clients
         for client in [pclient] if pclient else self.clients:
+            #Scale slide to fit the client with
+            scaled_slide = pygame.transform.scale(slide,
+                self.get_aspect_size(client.get_size(), slide.get_size()))
+            
+            #Convert slide to JPEG (use PIL instead of pygame, which needs version >=1.8
+            f = cStringIO.StringIO()
+            pil_img = Image.fromstring('RGB', scaled_slide.get_size(), pygame.image.tostring(scaled_slide, 'RGB'))
+            pil_img.save(f, 'JPEG', quality=15)
+            slide_jpg = f.getvalue()
+            f.close()
+
             try:
                 client.send_slide(slide_jpg, notes.encode('utf-8'), page_number)
             except IOError:
-                #traceback.print_exc()
-                #self.clients.remove(client)
-                self.close(client)
+                client.close()
         self.thread_lock.release()
 
         #Save current data for other clients
@@ -167,6 +164,7 @@ class XProtocol(Thread):
 
             #Get client screen size
             self.client_size = unpack("!ii", self.recv_bytes(len))
+            print "Client screen is", self.client_size
 
             self.remote.event_connected(self)
 
@@ -190,14 +188,7 @@ class XProtocol(Thread):
             print "Error:"
             traceback.print_exc()
 
-        try:
-            self.close(self.client)
-            self.client = None
-        except:
-            pass
-            
-        self.remote.event_disconnected(self, self.client_info)
-
+        self.close()
         
     def send_slide(self, slide_jpg, notes_utf, page_number):
         self.send(pack("!iii", PKT_CURRSLIDE, len(slide_jpg) + len(notes_utf) + 8, page_number))
@@ -207,3 +198,14 @@ class XProtocol(Thread):
         self.send(notes_utf)
 
  
+    def close(self):
+        try:
+            self.client.close()
+            self.client = None
+        except:
+            pass
+            
+        self.remote.event_disconnected(self, self.client_info)
+
+    def get_size(self):
+        return self.client_size
