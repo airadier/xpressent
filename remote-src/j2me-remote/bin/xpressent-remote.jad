@@ -1,0 +1,12 @@
+MIDlet-1: xpressent-remote, xpressent-remote.png, XPressentRemote
+MIDlet-Description: xPressent Remote Controller for J2ME
+MIDlet-Icon: xpressent.png
+MIDlet-Info-URL: http://devel.airadier.com/xpressent
+MIDlet-Jar-Size: 29064
+MIDlet-Jar-URL: xpressent-remote.jar
+MIDlet-Name: xpressent-remote
+MIDlet-Permissions: javax.microedition.io.Connector.bluetooth.client
+MIDlet-Vendor: AIMNET
+MIDlet-Version: 1.0
+MicroEdition-Configuration: CLDC-1.0
+MicroEdition-Profile: MIDP-2.0
