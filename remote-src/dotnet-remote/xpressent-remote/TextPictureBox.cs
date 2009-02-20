@@ -65,7 +65,7 @@ namespace xpressent_remote
 				this.showNotes = value;
 				DrawNotes();
 				DrawOffscreen();
-				this.Invalidate();
+				this.Refresh();
 			}
 		}
 
@@ -77,7 +77,7 @@ namespace xpressent_remote
 				this.textSize = value;
 				DrawNotes();
 				DrawOffscreen();
-				this.Invalidate();
+				this.Refresh();
 			}
 		}
 
@@ -139,7 +139,10 @@ namespace xpressent_remote
 		private void DrawOffscreen()
 		{
 
-			if (this.offscreen == null) offscreen = new Bitmap(this.Width, this.Height);
+			if (this.offscreen == null)
+			{
+				this.offscreen = new Bitmap(this.Width, this.Height);
+			}
 			
 			Bitmap off = this.offscreen;
 			Graphics g = Graphics.FromImage(off);
@@ -282,7 +285,7 @@ namespace xpressent_remote
 			this.lastMousePos = e.Y;
 
 			DrawOffscreen();
-			this.Invalidate();
+			this.Refresh();
 		}
 
 		private void TextPictureBox_Resize(object sender, EventArgs e)
