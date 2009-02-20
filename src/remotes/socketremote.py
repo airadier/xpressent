@@ -7,15 +7,6 @@ class SocketRemote(RemoteBase):
     def __init__ (self):
         RemoteBase.__init__(self)
 
-    def send(self, client, data):
-        client.send(data)
-
-    def recv(self, client, bytes):
-        return client.recv(bytes)
-
-    def close(self, client):
-        client.close()
-        
     def initialize(self):
         try:
             self.server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

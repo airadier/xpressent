@@ -14,7 +14,6 @@ PKT_KEYPRESS = 1
 PKT_CURRSLIDE = 2
 PKT_NEXTSLIDE = 3
 PKT_PREVSLIDE = 4
-PKT_NOTES = 5
 
 
 class RemoteBase(Thread):
@@ -56,11 +55,10 @@ class RemoteBase(Thread):
         return int(dest_w), int(dest_h)
 
 
-    def slide_change(self, slidemanager, page_number, slide, notes, client=None):
+    def slide_change(self, slidemanager, page_number, slide, notes, pclient=None):
         """Event fired when the current slide has changed"""
         if not slidemanager: return
-        
-        
+                
         #Scale slide to fit the client with
         slide = pygame.transform.scale(
             slide,
@@ -75,27 +73,14 @@ class RemoteBase(Thread):
 
         self.thread_lock.acquire()
         #Send current slide JPEG to all clients
-        for client in [client] if client else self.clients:
+        for client in [pclient] if pclient else self.clients:
             try:
-                self.send(client, pack("!iii", PKT_CURRSLIDE, len(slide_jpg), page_number))
-                self.send(client, slide_jpg)
-            except IOError:
-                #traceback.print_exc()
-                #self.clients.remove(client)
-                self.close(client)
-
-        #Send notes to all clients
-        for client in [client] if client else self.clients:
-            try:
-                notes_utf = notes.encode('utf-8')
-                self.send(client, pack("!ii", PKT_NOTES, len(notes_utf)))
-                self.send(client, notes_utf)
+                client.send_slide(slide_jpg, notes.encode('utf-8'), page_number)
             except IOError:
                 #traceback.print_exc()
                 #self.clients.remove(client)
                 self.close(client)
         self.thread_lock.release()
-
 
         #Save current data for other clients
         self.slidemanager = slidemanager
@@ -103,12 +88,6 @@ class RemoteBase(Thread):
         self.current_notes = notes
         self.page_number = page_number
 
-
-    def recv_bytes(self, client, amount):
-        data = ""
-        while len(data) < amount:
-            data = data + self.recv(client, amount-len(data))
-        return data
         
     def run(self):
 
@@ -121,62 +100,12 @@ class RemoteBase(Thread):
             #Wait for a new connection
             client, client_info = self.wait_connection()
 
-            try:
-                #When client connects, send HELLO packet, and check versions
-                self.send(client, pack("!ii", PROT_VERSION, PKT_HELLO))
-                version, = unpack("!i", self.recv_bytes(client, 4))
-                if version > PROT_VERSION:
-                    print "Unsupported client version: %d", version
-                    raise IOError
-                if unpack("!i", self.recv_bytes(client, 4))[0] != PKT_HELLO:
-                    print "Unexpected message received"
-                    raise IOError
-
-                #Get client screen size
-                self.client_size = unpack("!ii", self.recv_bytes(client, 8))
-                self.clients.append(client)
-
-                #Send current slide to client, firing slide_change event
-                self.slide_change(self.slidemanager, self.page_number,
-                    self.current_slide, self.current_notes, client = client)
-
-                while True:
-                    pkt_type, = unpack("!i", self.recv_bytes(client, 4))
-
-                    #If we get the KEYPRESS packet, fire a keypress event
-                    if pkt_type == PKT_KEYPRESS:
-                        key, = unpack("!i", self.recv_bytes(client, 4))
-                        pygame.event.post(Event(pygame.KEYUP, key=key, mod=None))
-
-            except IOError:
-                print "IOError:"
-                traceback.print_exc()
-            except SystemError:
-                pass
-            except Exception:
-                print "Error:"
-                traceback.print_exc()
-
-            print "Client Disconnected:", client_info
-
-            try:
-                self.clients.remove(client)
-            except:
-                pass
-            
-            self.close(client)
+            protocol = XProtocol(self, client, client_info)
+            self.clients.append(protocol)
+            protocol.start()
 
         self.shutdown()
         
-    def send(self, client, data):
-        raise NotImplementedError
-
-    def recv(self, client, bytes):
-        raise NotImplementedError
-    
-    def close(self, client):
-        raise NotImplementedError
-    
     def initialize(self):
         raise NotImplementedError
     
@@ -185,4 +114,96 @@ class RemoteBase(Thread):
         
     def shutdown(self):
         raise NotImplementedError
+    
+    def event_connected(self, pclient):
+        #Send current slide to client, firing slide_change event
+        self.slide_change(self.slidemanager, self.page_number,
+            self.current_slide, self.current_notes, pclient = pclient)
 
+    def event_keypress(self, pclient, key):
+        pygame.event.post(Event(pygame.KEYUP, key=key, mod=None))
+
+    def event_disconnected(self, pclient, client_info):
+        try:
+            self.clients.remove(pclient)
+        except:
+            pass
+        print "Client Disconnected:", client_info
+        
+
+class XProtocol(Thread):
+    
+    def __init__(self, remote, client, client_info):
+        Thread.__init__(self)
+        self.remote = remote
+        self.client = client
+        self.client_info = client_info
+    
+    def recv_bytes(self, amount):
+        data = ""
+        while len(data) < amount:
+            data = data + self.client.recv(amount-len(data))
+        return data
+    
+    def send(self, data):
+        if not self.client: return 
+        return self.client.send(data)
+    
+    def run(self):
+        
+        try:
+            #When client connects, send HELLO packet, and check versions
+            self.client.send(pack("!iii", PROT_VERSION, PKT_HELLO, 0))
+            
+            version,  = unpack("!i", self.recv_bytes(4))
+            if version > PROT_VERSION:
+                print "Unsupported client version: %d", version
+                raise IOError
+                
+            hello, len = unpack("!ii", self.recv_bytes(8))
+            if  hello != PKT_HELLO:
+                print "Unexpected message received"
+                raise IOError
+
+            #Get client screen size
+            self.client_size = unpack("!ii", self.recv_bytes(len))
+
+            self.remote.event_connected(self)
+
+            while True:
+                pkt_type, len = unpack("!ii", self.recv_bytes(8))
+
+                #If we get the KEYPRESS packet, fire a keypress event
+                if pkt_type == PKT_KEYPRESS and len == 4:
+                    key, = unpack("!i", self.recv_bytes(4))
+                    self.remote.event_keypress(self, key)
+                else:
+                    #Just skip the packet
+                    self.recv_bytes(len)
+
+        except IOError:
+            print "IOError:"
+            traceback.print_exc()
+        except SystemError:
+            pass
+        except Exception:
+            print "Error:"
+            traceback.print_exc()
+
+        try:
+            self.close(self.client)
+            self.client = None
+        except:
+            pass
+            
+        self.remote.event_disconnected(self, self.client_info)
+
+        
+    def send_slide(self, slide_jpg, notes_utf, page_number):
+        self.send(pack("!iii", PKT_CURRSLIDE, len(slide_jpg) + len(notes_utf) + 8, page_number))
+        self.send(pack("!i", len(slide_jpg)))
+        self.send(slide_jpg)
+        self.send(pack("!i", len(notes_utf)))
+        self.send(notes_utf)
+
+ 
