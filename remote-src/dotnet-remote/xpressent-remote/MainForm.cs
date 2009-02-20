@@ -29,37 +29,23 @@ namespace xpressent_remote
 				this.protocol = new XProtocol(btDev, this.pictureBox.Width, this.pictureBox.Height);
 				this.protocol.ErrorRaised += this.showError;
 				this.protocol.CurrentSlideReceived += this.setSlide;
-				this.protocol.NotesReceived += this.setNotes;
 				this.protocol.Connect();
 			}
 
 		}
 
 		private delegate void showErrorDelegate(string err);
-		private delegate void setImageDelegate(int pageNum, Bitmap img);
-		private delegate void setNotesDelegate(string notes);
+		private delegate void setSlideDelegate(int pageNum, Bitmap img, string notes);
 
-		private void setSlide(int pageNum, Bitmap img)
+		private void setSlide(int pageNum, Bitmap img, string notes)
 		{
 			if (this.InvokeRequired)
 			{
-				Invoke(new setImageDelegate(this.setSlide), pageNum, img);
+				Invoke(new setSlideDelegate(this.setSlide), pageNum, img, notes);
 			}
 			else
 			{
-				this.pictureBox.ShowNotes = false;
 				this.pictureBox.Image = img;
-			}
-		}
-
-		private void setNotes(string notes)
-		{
-			if (this.InvokeRequired)
-			{
-				Invoke(new setNotesDelegate(this.setNotes), notes);
-			}
-			else
-			{
 				this.pictureBox.Text = notes;
 			}
 		}
@@ -93,14 +79,12 @@ namespace xpressent_remote
 
 		private void menuPrev_Click(object sender, EventArgs e)
 		{
-			this.pictureBox.Image = null;
 			if (this.protocol != null)
 				this.protocol.SendKey(280);
 		}
 
 		private void menuNext_Click(object sender, EventArgs e)
 		{
-			this.pictureBox.Image = null;
 			if (this.protocol != null)
 				this.protocol.SendKey(281);
 		}

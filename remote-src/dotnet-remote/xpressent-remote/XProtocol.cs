@@ -23,16 +23,14 @@ namespace xpressent_remote
 		const int PacketNotes = 5;
 
 		public delegate void ErrorRaisedDelegate(string errorMsg);
-		public delegate void CurrentSlideReceivedDelegate(int pageNum, Bitmap img);
+		public delegate void CurrentSlideReceivedDelegate(int pageNum, Bitmap img, string notes);
 		public delegate void NextSlideReceivedDelegate(int pageNum, Bitmap img);
 		public delegate void PrevSlideReceivedDelegate(int pageNum, Bitmap img);
-		public delegate void NotesReceivedDelegate(string notes);
 
 		public event ErrorRaisedDelegate ErrorRaised;
 		public event CurrentSlideReceivedDelegate CurrentSlideReceived;
 		public event NextSlideReceivedDelegate NextSlideReceived;
 		public event PrevSlideReceivedDelegate PrevSlideReceived;
-		public event NotesReceivedDelegate NotesReceived;
 
 		/* Boolean to tell the communication thread to exit */
 		bool finishThread = false;
@@ -78,6 +76,7 @@ namespace xpressent_remote
 		public void SendKey(int keyNum)
 		{
 			this.sendInt(PacketKeyPress);
+			this.sendInt(4);
 			this.sendInt(keyNum);
 		}
 
@@ -108,6 +107,7 @@ namespace xpressent_remote
 
 			this.sendInt(ProtocolVersion);
 			this.sendInt(PacketHello);
+			this.sendInt(8);
 			this.sendInt(this.width);
 			this.sendInt(this.height);
 
@@ -119,14 +119,13 @@ namespace xpressent_remote
 				return;
 			}
 
-			if (receiveInt() != PacketHello)
+			if (receiveInt() != PacketHello || receiveInt() != 0)
 			{
 				raiseError("Unexpected packet received");
 				this.sock.Close();
 				return;
 			}
 
-			int size;
 			int pageNum;
 			System.IO.MemoryStream stream;
 
@@ -134,43 +133,43 @@ namespace xpressent_remote
 			{
 				try
 				{
-					int type = this.receiveInt();
-					switch (type)
+					int packetType = this.receiveInt();
+					int packetLen = this.receiveInt();
+					switch (packetType)
 					{
 
 						case PacketCurrentSlide:
-							size = this.receiveInt();
 							pageNum = this.receiveInt();
-							stream = new System.IO.MemoryStream(receiveBytes(size));
-							currentSlideReceived(pageNum, new Bitmap(stream));
+							int jpegSize = this.receiveInt();
+							stream = new System.IO.MemoryStream(this.receiveBytes(jpegSize));
+							int notesSize = this.receiveInt();
+							byte[] notesData = this.receiveBytes(notesSize);
+
+							if (this.CurrentSlideReceived != null)
+								this.CurrentSlideReceived(pageNum,
+									new Bitmap(stream),
+									Encoding.UTF8.GetString(notesData, 0, notesData.Length).Replace("\n", "\r\n"));
+
 							stream.Close();
+							
 							break;
 
 						case PacketNextSlide:
-							size = this.receiveInt();
 							pageNum = this.receiveInt();
-							stream = new System.IO.MemoryStream(receiveBytes(size));
+							stream = new System.IO.MemoryStream(receiveBytes(packetLen - 4));
 							nextSlideReceived(pageNum, new Bitmap(stream));
 							stream.Close();
 							break;
 
 						case PacketPrevSlide:
-							size = this.receiveInt();
 							pageNum = this.receiveInt();
-							stream = new System.IO.MemoryStream(receiveBytes(size));
+							stream = new System.IO.MemoryStream(receiveBytes(packetLen - 4));
 							prevSlideReceived(pageNum, new Bitmap(stream));
 							stream.Close();
 							break;
 
-						case PacketNotes:
-							size = this.receiveInt();
-							byte[] notesData = receiveBytes(size);
-							notesReceived(Encoding.UTF8.GetString(notesData, 0, notesData.Length).Replace("\n","\r\n"));
-							//MessageBox.Show("Notes:" + Encoding.UTF8.GetString(notesData, 0, notesData.Length));
-							break;
-
 						default:
-							raiseError("Unknown packet type" + type );
+							this.receiveBytes(packetLen);
 							break;
 					}
 				}
@@ -232,11 +231,6 @@ namespace xpressent_remote
 			this.sock.Write(data, 0, data.Length);
 		}
 
-		protected void currentSlideReceived(int pageNum, Bitmap img)
-		{
-			if (this.CurrentSlideReceived != null)
-				this.CurrentSlideReceived(pageNum, img);
-		}
 
 		protected void nextSlideReceived(int pageNum, Bitmap img)
 		{
@@ -250,11 +244,6 @@ namespace xpressent_remote
 				this.PrevSlideReceived(pageNum, img);
 		}
 
-		protected void notesReceived(string notes)
-		{
-			if (this.NotesReceived != null)
-				this.NotesReceived(notes);
-		}
 
 		protected void raiseError(string msg)
 		{

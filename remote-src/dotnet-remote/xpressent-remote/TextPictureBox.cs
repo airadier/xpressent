@@ -39,9 +39,6 @@ namespace xpressent_remote
 				{
 					this.darkImage = null;
 				}
-				this.notes = null;
-				this.showNotes = false;
-				DrawNotes();
 				DrawOffscreen();
 				this.Invalidate();
 			}
@@ -96,9 +93,7 @@ namespace xpressent_remote
 		public TextPictureBox()
 			: base()
 		{
-
 			this.InitializeComponent();
-
 		}
 
 		private string[] splitLines(Graphics g, Font f, string text, int maxwidth)
