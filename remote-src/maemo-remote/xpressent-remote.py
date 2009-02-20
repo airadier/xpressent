@@ -23,7 +23,6 @@ PKT_KEYPRESS = 1
 PKT_CURRSLIDE = 2
 PKT_NEXTSLIDE = 3
 PKT_PREVSLIDE = 4
-PKT_NOTES = 5
 
 EVENT_HIDEMOUSE = pygame.USEREVENT + 1
 
@@ -165,30 +164,32 @@ class BaseClient(threading.Thread):
         pygame.event.post(Event(pygame.QUIT))
 
     def send_keypress(self, keycode):
-        self.send(pack("!ii", PKT_KEYPRESS, keycode))
+        self.send(pack("!iii", PKT_KEYPRESS, 4, keycode))
 
     def run(self):
 
         size = self.screen.get_size()
-        self.send(pack("!iiii", PROT_VERSION, PKT_HELLO, size[0], size[1]))
+        
+        self.send(pack("!iiiii", PROT_VERSION, PKT_HELLO, 8, size[0], size[1]))
+        
         version, = unpack("!i", self.recv(4))
         if version > PROT_VERSION:
             print "Unsupported server version: %d", version
             sys.exit(-1)
-        if unpack("!i", self.recv(4))[0] != PKT_HELLO:
+        
+        hello, len = unpack("!ii", self.recv(8))
+        if hello != PKT_HELLO or len != 0:
             print "Unexpected packet received"
             sys.exit(-1)
 
         while True:
-            pkt_type, = unpack("!i", self.sock.recv(4))
-            if pkt_type == PKT_NOTES:
-                notes_len, = unpack("!i", self.recv(4))
+            pkt_type, len = unpack("!ii", self.sock.recv(8))
+            if pkt_type == PKT_CURRSLIDE and len > 4:
+                page_number = unpack("!i", self.sock.recv(4))
+                jpg_len, = unpack("!i", self.sock.recv(4))
+                slide_jpg = self.read_bytes(jpg_len)
+                notes_len, = unpack("!i", self.sock.recv(4))
                 self.notes = str.decode(self.read_bytes(notes_len),'utf-8')
-                self.notes_surface = None
-                self.repaint_slide()
-            elif pkt_type == PKT_CURRSLIDE:
-                slide_len, page_number = unpack("!ii", self.sock.recv(8))
-                slide_jpg = self.read_bytes(slide_len)
                 f = cStringIO.StringIO()
                 f.write(slide_jpg)
                 f.seek(0)
@@ -198,7 +199,7 @@ class BaseClient(threading.Thread):
                 self.slide_alpha.blit(self.slide, (0,0))
                 self.slide.set_alpha(None)
                 f.close()
-                self.notes = ""
+                self.notes_surface = None
                 self.notes_offset = 0
                 self.repaint_slide()
 
