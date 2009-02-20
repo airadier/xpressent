@@ -61,14 +61,17 @@ namespace xpressent_remote
 			{
 				this.finishThread = true;
 				this.protocolThread.Join(500);
+
+				try
+				{				
+					this.sock.Close();
+					this.sock = null;
+				}
+				catch { }
+
 				this.protocolThread.Abort();
 				this.protocolThread = null;
 
-				try
-				{
-					this.sock.Close();
-				}
-				catch { }
 
 			}			
 		}

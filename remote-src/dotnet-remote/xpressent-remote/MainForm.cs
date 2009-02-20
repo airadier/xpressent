@@ -20,7 +20,11 @@ namespace xpressent_remote
 
 		protected void selectDevice()
 		{
-			if (this.protocol != null) this.protocol.Disconnect();
+			if (this.protocol != null)
+			{
+				this.protocol.Disconnect();
+				this.protocol = null;
+			}
 
 			BluetoothDevice btDev = SelectDevice.Run();
 
