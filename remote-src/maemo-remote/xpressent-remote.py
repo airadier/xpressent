@@ -351,6 +351,7 @@ class BaseClient(threading.Thread):
                 and pos[1] > screen_size[1] - self.right_arrow.get_size()[1]:
                 self.next_slide()
                 return True
+        return False
 
     def send_keypress(self, keycode):
         self.send(pack("!iii", PKT_KEYPRESS, 4, keycode))
