@@ -71,7 +71,7 @@ enabled = True
 #known_addresses = x.x.x.x, y.y.y.y, ...
 #A comma separated list of known addresses, allowed to connect
 #as a remote controller
-known_addresses = 
+known_addresses = 127.0.0.1 
 
 #known_action = accept | ask | deny
 #What to do when a known address tries to connect. Ask for permission,

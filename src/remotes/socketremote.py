@@ -19,7 +19,7 @@ from remotebase import *
 import socket
 
 class SocketRemote(RemoteBase):
-   
+
     def __init__ (self):
         RemoteBase.__init__(self)
 
@@ -39,6 +39,20 @@ class SocketRemote(RemoteBase):
         print "Waiting for socket connection on %s port %d" % (self.addr, self.port)
         client_sock, client_info = self.server_sock.accept()
         print "Got connection from ", client_info
+
+        known_addresses = [x.strip().lower()
+                           for x in config.get('remote:socket', 'known_addresses', '').split(',')]
+        known_action = config.get('remote:socket', 'known_action', 'accept').lower()
+        unknown_action = config.get('remote:socket', 'unknown_action', 'deny').lower()
+        if client_info[0].lower() in known_addresses and known_action == 'deny':
+                print "Rejecting known address"
+                client_sock.close()
+                return None
+        if client_info[0].lower() not in known_addresses and unknown_action == 'deny':
+                print "Rejecting unknown address"
+                client_sock.close()
+                return None
+
         return client_sock, client_info
 
     def shutdown(self):

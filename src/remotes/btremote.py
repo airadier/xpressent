@@ -25,7 +25,7 @@ class BluetoothRemote(RemoteBase):
 
     def __init__ (self):
         RemoteBase.__init__(self)
-        
+
     def initialize(self):
         try:
             self.server_sock = BluetoothSocket( RFCOMM )
@@ -43,14 +43,26 @@ class BluetoothRemote(RemoteBase):
         except Exception, ex:
             print "BT Error:", ex
             return False
-        
+
     def wait_connection(self):
         print "Waiting for Bluetooth RFCOMM connection on %s channel %d" % (self.addr, self.port)
         client_sock, client_info = self.server_sock.accept()
         print "Got connection from ", client_info
+        known_addresses = [x.strip().lower()
+                           for x in config.get('remote:bluetooth', 'known_addresses', '').split(',')]
+        known_action = config.get('remote:bluetooth', 'known_action', 'accept').lower()
+        unknown_action = config.get('remote:bluetooth', 'unknown_action', 'deny').lower()
+        if client_info[0].lower() in known_addresses and known_action == 'deny':
+                print "Rejecting known address"
+                client_sock.close()
+                return None
+        if client_info[0].lower() not in known_addresses and unknown_action == 'deny':
+                print "Rejecting unknown address"
+                client_sock.close()
+                return None
+
         return client_sock, client_info
 
-        
     def shutdown(self):
         self.server_sock.close()
 
