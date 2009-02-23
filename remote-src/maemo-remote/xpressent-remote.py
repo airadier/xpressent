@@ -228,7 +228,7 @@ class BaseClient(threading.Thread):
         self.notes = ""
         self.notes_surface = None
         self.notes_offset = 0
-        
+
         f = cStringIO.StringIO(base64.b64decode(LEFT_ARROW_B64))
         self.left_arrow = pygame.image.load(f, 'img.png')
         f.close()
@@ -250,7 +250,7 @@ class BaseClient(threading.Thread):
                                 (size[1]-slide_size[1])/2))
 
         if self.show_notes: self.paint_notes()
-            
+
         self.screen.blit(self.left_arrow, (0,size[1]-self.left_arrow.get_size()[1]))
         self.screen.blit(self.right_arrow, (
             size[0] - self.right_arrow.get_size()[0],
@@ -270,7 +270,6 @@ class BaseClient(threading.Thread):
                 current_line = current_line + ' ' + word
             lines.append(current_line)
         return lines
-
 
     def paint_notes(self):
         screen_size = self.screen.get_size()
@@ -339,7 +338,7 @@ class BaseClient(threading.Thread):
 
     def next_slide(self):
         self.send_keypress(281)
-        
+
     def process_mouse_button(self, pos, button):
         if button == 1:
             screen_size = self.screen.get_size()
@@ -359,14 +358,14 @@ class BaseClient(threading.Thread):
     def run(self):
 
         size = self.screen.get_size()
-        
+
         self.send(pack("!iiiii", PROT_VERSION, PKT_HELLO, 8, size[0], size[1]))
-        
+
         version, = unpack("!i", self.recv(4))
         if version > PROT_VERSION:
             print "Unsupported server version: %d", version
             sys.exit(-1)
-        
+
         hello, len = unpack("!ii", self.recv(8))
         if hello != PKT_HELLO or len != 0:
             print "Unexpected packet received"
@@ -465,9 +464,18 @@ def run():
     else:
         fullscreen = False
 
+    if osso_detected:
+        print "Osso detected, starting fullscreen"
+        sys.argv.append('-b')
+        fullscreen = True
+
     screen = Screen(fullscreen)
     connect = False
 
+    #if osso_detected:
+    #    osso_c = osso.Context("xPressent Remote", "0.1", False)
+    #    osso_sysnote = osso.SystemNote(osso_c)
+    #    osso_sysnote.system_note_infoprint("xPressent: Connecting")
     try:
         if len(sys.argv) == 3 and sys.argv[1].lower() == '-s':
             client = SocketClient(sys.argv[2:], screen)
@@ -491,7 +499,7 @@ def run():
 
     mouse_dragging = False
     mouse_dragged = False
-    mouse_last = (0,0)
+    mouse_last = (-1,-1)
 
     while True:
         event = pygame.event.wait()
@@ -533,11 +541,13 @@ def run():
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 mouse_dragging = False
+                mouse_last = (-1, -1)
             if not mouse_dragged:
                 client.toggle_notes()
         elif event.type == pygame.MOUSEMOTION:
-            mouse_dragged = True
-            if mouse_dragging:
+            if mouse_dragging and abs(event.pos[1]-mouse_last[1]) > 5:
+                mouse_dragged = True
+            if mouse_dragging and mouse_dragged:
                 motions = [event]
                 motions.extend(pygame.event.get(pygame.MOUSEMOTION))
                 total_rel = (0,0)
@@ -545,6 +555,7 @@ def run():
                     if event.buttons[0]:
                         total_rel = (total_rel[0] + event.rel[0],
                             total_rel[1] + event.rel[1])
+                        mouse_last = event.pos
                 client.scroll(total_rel)
             #pygame.mouse.set_visible(True)
             #pygame.time.set_timer(EVENT_HIDEMOUSE, 1000)
@@ -554,6 +565,12 @@ def run():
         else:
             pass
             #print event
+
+try:
+    import osso
+    osso_detected = True
+except:
+    osso_detected = False
 
 if __name__ == '__main__':
     run()
