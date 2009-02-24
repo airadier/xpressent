@@ -40,6 +40,12 @@ namespace xpressent_remote
 		{
 			if (this.protocol != null)
 			{
+				if (MessageBox.Show(
+					"Close current connection?",
+					"Now connected",
+					MessageBoxButtons.YesNo,
+					MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) == DialogResult.No) return;
+
 				this.protocol.Disconnect();
 				this.protocol = null;
 			}
@@ -80,13 +86,12 @@ namespace xpressent_remote
 			}
 			else
 			{
-				MessageBox.Show("Error: " + err);
+				MessageBox.Show(err, "Error", MessageBoxButtons.OK, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
 			}
 		}
 
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			selectDevice();
 		}
 
 		private void menuExit_Click(object sender, EventArgs e)

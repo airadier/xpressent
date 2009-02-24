@@ -127,10 +127,18 @@ namespace xpressent_remote
 			this.pictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
 						| System.Windows.Forms.AnchorStyles.Left)
 						| System.Windows.Forms.AnchorStyles.Right)));
+			this.pictureBox.Image = ((System.Drawing.Bitmap)(resources.GetObject("pictureBox.Image")));
 			this.pictureBox.Location = new System.Drawing.Point(0, 0);
 			this.pictureBox.Name = "pictureBox";
 			this.pictureBox.Size = new System.Drawing.Size(240, 268);
 			this.pictureBox.TabIndex = 0;
+			this.pictureBox.Text = @"Welcome to xPressent Remote.
+- Choose Remote->Connect to find and connecto to a running xPressent device.
+- Click on the screen or the middle button to toggle notes.
+- Drag the screen to scroll the notes.
+- Click the arrows or the left/right buttons to change slides.
+- Use up/down button to change notes size.
+- Have fun!";
 			this.pictureBox.PrevEvent += new xpressent_remote.TextPictureBox.NextPrevEventDelegate(this.pictureBox_PrevEvent);
 			this.pictureBox.NextEvent += new xpressent_remote.TextPictureBox.NextPrevEventDelegate(this.pictureBox_NextEvent);
 			// 
