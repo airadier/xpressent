@@ -588,7 +588,9 @@ class DefaultUI(BaseUI):
     
 
 class OssoUI(DefaultUI):
-    pass
+    def __init__(self):
+        DefaultUI.__init__(self, True)
+        pygame.mouse.set_visible(False)
 
 
 def usage():
@@ -609,7 +611,7 @@ def run():
 
     if osso_detected:
         print "Osso detected, starting fullscreen"
-        ui = OssoUI(True)
+        ui = OssoUI()
 
     if not ui:
         ui = DefaultUI(fullscreen)
@@ -643,7 +645,7 @@ def run():
     client.start()
 
     pygame.display.set_caption('xPressent Remote')
-    pygame.mouse.set_visible(True)
+    #pygame.mouse.set_visible(True)
 
     mouse_dragging = False
     mouse_dragged = False
