@@ -525,11 +525,11 @@ class DefaultUI(BaseUI):
             current_line = ""
             for word in line.split(' '):
                 for x in range(len(word)):
-                    if font.size(current_line + ' ' + word[:x+1])[0] > maxwidth:
+                    if font.size(current_line + word[:x+1])[0] > maxwidth:
                         lines.append(current_line)
                         current_line = ""
                         break
-                current_line = current_line + ' ' + word
+                current_line = current_line + word + ' '
             lines.append(current_line)
         return lines
 
