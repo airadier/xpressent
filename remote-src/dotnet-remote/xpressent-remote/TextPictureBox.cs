@@ -67,7 +67,7 @@ namespace xpressent_remote
 			get { return this.notes; }
 			set
 			{
-				this.notes = value;
+				this.notes = value.Replace("\r", "");
 				this.notesOffset = 0;
 				DrawNotes();
 				DrawOffscreen();
@@ -114,24 +114,64 @@ namespace xpressent_remote
 			this.InitializeComponent();
 		}
 
-		private string[] splitLines(Graphics g, Font f, string text, int maxwidth)
+		private string[] splitLines(Graphics g, Font f, Font ff, string text, int maxwidth, out int height)
 		{
+            bool fixed_mode = false;
 			List<string> lines = new List<string>();
+            height = 0;
 
 			foreach (string line in text.Split('\n'))
 			{
-				string current_line = "";
-				foreach (string word in line.Split(' '))
-				{
-					SizeF size = g.MeasureString(current_line + " " + word, f);
-					if (size.Width > maxwidth)
-					{
-						lines.Add(current_line);
-						current_line = "";
-					}
-					current_line += word + " ";
-				}
-				lines.Add(current_line);
+
+                if (fixed_mode)
+                {
+                    if (line.CompareTo("}") == 0)
+                    {
+                        fixed_mode = false;
+                        lines.Add(line);
+                        continue;
+                    }
+
+                    lines.Add(line);
+                    height += (int)g.MeasureString(line, ff).Height;
+                }
+                else
+                {
+                    if (line.CompareTo("{") == 0)
+                    {
+                        fixed_mode = true;
+                        lines.Add(line);
+                        continue;
+                    }
+
+				    string current_line = "";
+				    foreach (string word in line.Split(' '))
+				    {
+					    SizeF size = g.MeasureString(current_line + word, f);
+					    if (size.Width > maxwidth)
+					    {
+                            string prev_line = current_line;
+						    lines.Add(current_line);
+                            height += (int)g.MeasureString(current_line, f).Height;
+						    current_line = "";
+                            for (int i = 0; i < prev_line.Length; i++)
+                            {
+                                if (prev_line[i] == ' ' || prev_line[i] == '-' || prev_line[i] == '*')
+                                {
+                                    current_line += " ";
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+					    }
+					    current_line += word + " ";
+				    }
+				    lines.Add(current_line);
+                    height += (int)g.MeasureString(current_line, f).Height;
+                }
+
 			}
 
 			return lines.ToArray();
@@ -141,16 +181,42 @@ namespace xpressent_remote
 		{
 			Graphics g = this.CreateGraphics();
 			Font font = new Font(FontFamily.GenericSansSerif, this.textSize, 0);
-			string[] textLines = splitLines(g, font, this.notes ?? "", this.Width - 10);
+            Font fixed_font = new Font(FontFamily.GenericMonospace, this.textSize, 0);
+            int total_height = 0;
+			string[] textLines = splitLines(g, font, fixed_font, this.notes ?? "", this.Width - 10, out total_height);
 
-			string text = String.Join("\n", textLines);
-			if (this.notesBitmap != null) this.notesBitmap.Dispose();
-			this.notesBitmap = new Bitmap(this.Width - 10, (int)g.MeasureString(text, font).Height);
-			g.Dispose();
+            if (this.notesBitmap != null) this.notesBitmap.Dispose();
+			this.notesBitmap = new Bitmap(this.Width - 10, total_height);
+            g.Dispose();
+            Graphics g2 = Graphics.FromImage(this.notesBitmap);
+            float y = 0;
+            bool fixed_mode = false;
+            foreach (string line in textLines) 
+            {
+                if (fixed_mode)
+                {
+                    if (line.CompareTo("}") == 0)
+                    {
+                        fixed_mode = false;
+                        continue;
+                    }
 
-			Graphics g2 = Graphics.FromImage(this.notesBitmap);
-			g2.DrawString(text, font, new SolidBrush(Color.White), 0, 0);
-			g2.Dispose();
+                    g2.DrawString(line, fixed_font, new SolidBrush(Color.White), 0, y);
+                    y += g2.MeasureString(line, fixed_font).Height;
+                }
+                else
+                {
+                    if (line.CompareTo("{") == 0)
+                    {
+                        fixed_mode = true;
+                        continue;
+                    }
+
+                    g2.DrawString(line, font, new SolidBrush(Color.White), 0, y);
+                    y += g2.MeasureString(line, font).Height;
+                }
+            }
+            g2.Dispose();
 
 		}
 
@@ -294,16 +360,20 @@ namespace xpressent_remote
 
 		private void TextPictureBox_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (e.Y != this.lastMousePos) this.dragged = true;
-			if (!this.dragging || !this.showNotes || this.notesBitmap == null) return;
+            if (e.Y < this.lastMousePos - 3 || e.Y > this.lastMousePos + 3)
+            {
+                this.dragged = true;
 
-			this.notesOffset += e.Y - this.lastMousePos;
-			if (notesOffset > 0) this.notesOffset = 0;
-			if (notesOffset < 0 - this.notesBitmap.Height) notesOffset = 0 - this.notesBitmap.Height;
-			this.lastMousePos = e.Y;
+                if (!this.dragging || !this.showNotes || this.notesBitmap == null) return;
 
-			DrawOffscreen();
-			this.Refresh();
+                this.notesOffset += e.Y - this.lastMousePos;
+                if (notesOffset > 0) this.notesOffset = 0;
+                if (notesOffset < 0 - this.notesBitmap.Height) notesOffset = 0 - this.notesBitmap.Height;
+                this.lastMousePos = e.Y;
+
+                DrawOffscreen();
+                this.Refresh();
+            }
 		}
 
 		private void TextPictureBox_Resize(object sender, EventArgs e)
