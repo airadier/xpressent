@@ -727,7 +727,6 @@ def run():
             else:
                 print 'Key', event.key
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_dragged = ui.process_mouse_button(event.pos, event.button)
             if not mouse_dragged and event.button == 1:
                 mouse_dragging = True
                 mouse_last = event.pos
@@ -737,8 +736,14 @@ def run():
             if event.button == 1:
                 mouse_dragging = False
                 mouse_last = (-1, -1)
-            if not mouse_dragged:
-                ui.toggle_notes()
+                if not mouse_dragged:
+                    processed = ui.process_mouse_button(event.pos, event.button)
+                    if not processed: ui.toggle_notes()
+            elif event.button == 4:
+                ui.scroll((0, 50))
+            elif event.button == 5:
+                ui.scroll((0, -50))
+            mouse_dragged = False
         elif event.type == pygame.MOUSEMOTION:
             if mouse_dragging and abs(event.pos[1]-mouse_last[1]) > 5:
                 mouse_dragged = True
