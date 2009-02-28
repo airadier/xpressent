@@ -330,41 +330,59 @@ namespace xpressent_remote
 
 		private void TextPictureBox_MouseDown(object sender, MouseEventArgs e)
 		{
-			this.dragged = true;
-			if (e.Y >= (this.Height - this.prevBitmap.Height) &&
-				e.X <= this.prevBitmap.Width)
-			{
-				if (this.PrevEvent != null) this.PrevEvent();
-			}
-			else if (e.Y >= (this.Height - this.nextBitmap.Height) &&
-				e.X >= this.Width - this.nextBitmap.Width)
-			{
-				if (this.NextEvent != null) this.NextEvent();
-			}
-			else
-			{
-				if (e.Button == MouseButtons.Left) this.dragging = true;
-				this.dragged = false;
-				this.lastMousePos = e.Y;
-			}
+
+            if (e.Button == MouseButtons.Left && !this.dragged)
+            {
+                this.dragging = true;
+                this.lastMousePos = e.Y;
+            }
+            else
+            {
+                this.dragging = false;
+            }
+            
 		}
 
 		private void TextPictureBox_MouseUp(object sender, MouseEventArgs e)
 		{
-			if (e.Button == MouseButtons.Left) this.dragging = false;
-			if (!this.dragged)
-			{
-				this.ShowNotes = !this.ShowNotes;
-			}
+
+            if (e.Button == MouseButtons.Left)
+            {
+                this.dragging = false;
+                this.lastMousePos = -1;
+                if (!this.dragged)
+                {
+                    if (e.Y >= (this.Height - this.prevBitmap.Height) &&
+                        e.X <= this.prevBitmap.Width)
+                    {
+                        if (this.PrevEvent != null) this.PrevEvent();
+                    }
+                    else if (e.Y >= (this.Height - this.nextBitmap.Height) &&
+                        e.X >= this.Width - this.nextBitmap.Width)
+                    {
+                        if (this.NextEvent != null) this.NextEvent();
+                    }
+                    else
+                    {
+                        this.ShowNotes = !this.ShowNotes;
+                    }
+                }
+            }
+
+            this.dragged = false;
+
 		}
 
 		private void TextPictureBox_MouseMove(object sender, MouseEventArgs e)
 		{
-            if (e.Y < this.lastMousePos - 3 || e.Y > this.lastMousePos + 3)
+            if (this.dragging && (e.Y < this.lastMousePos - 3 || e.Y > this.lastMousePos + 3))
             {
                 this.dragged = true;
+            }
 
-                if (!this.dragging || !this.showNotes || this.notesBitmap == null) return;
+            if (this.dragging && this.dragged)
+            {
+                if (!this.showNotes || this.notesBitmap == null) return;
 
                 this.notesOffset += e.Y - this.lastMousePos;
                 if (notesOffset > 0) this.notesOffset = 0;
