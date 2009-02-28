@@ -5,8 +5,30 @@ Slide 1
 ----------------------
 Slide 2
  * More than five '-' characters act as a marker for a new slide in the .xpr file
- * It's as simple as that!
  * You can read notes and scroll up and down
+ * It's as simple as that!
+
+     If a line is indented, and too long to fit in one line, it's automatically splitted and lines in the paragraph keep the indentation.
+
+ - The '-' minus or the '*' star characters can be used for bullets. Long lines are splitted as usual, and identation is kept
+    * This is a sub-section
+    * This is a another subsection
+    * This is the third subsection with a very very very very very long long long line that shouldn't fit in one line
+ - Back to the previous indentation
+
+A line containing only the { symbol starts a code (fixed font) section. Put } in a single line to finish it
+
+{
+
+ Example!!
+
+ +-----------------------------+
+ |                             |
+ | It can be used for diagrams |
+ |                             |
+ +-----------------------------+
+}
+
  * You can increase and decrease text size
  * Try it!
  * Scroll...

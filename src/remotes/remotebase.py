@@ -158,7 +158,10 @@ class XProtocol(Thread):
     def recv_bytes(self, amount):
         data = ""
         while len(data) < amount:
-            data = data + self.client.recv(amount-len(data))
+            new_data = self.client.recv(amount-len(data))
+            if not new_data: 
+                raise IOError("Read error")
+            data = data + new_data
         return data
 
     def send(self, data):
