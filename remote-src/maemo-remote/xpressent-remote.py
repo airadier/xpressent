@@ -351,32 +351,36 @@ class BaseClient(threading.Thread):
 
         size = self.ui.get_size()
 
-        self.send(pack("!iiiii", PROT_VERSION, PKT_HELLO, 8, size[0], size[1]))
+        try:
+            self.send(pack("!iiiii", PROT_VERSION, PKT_HELLO, 8, size[0], size[1]))
 
-        version, = unpack("!i", self.recv(4))
-        if version > PROT_VERSION:
-            print "Unsupported server version: %d", version
-            sys.exit(-1)
+            version, = unpack("!i", self.recv(4))
+            if version > PROT_VERSION:
+                print "Unsupported server version: %d", version
+                sys.exit(-1)
 
-        hello, len = unpack("!ii", self.recv(8))
-        if hello != PKT_HELLO or len != 0:
-            print "Unexpected packet received"
-            sys.exit(-1)
+            hello, len = unpack("!ii", self.recv(8))
+            if hello != PKT_HELLO or len != 0:
+                print "Unexpected packet received"
+                sys.exit(-1)
 
-        while True:
-            pkt_type, len = unpack("!ii", self.sock.recv(8))
-            if pkt_type == PKT_CURRSLIDE and len > 4:
-                page_number = unpack("!i", self.sock.recv(4))
-                jpg_len, = unpack("!i", self.sock.recv(4))
-                slide_jpg = self.read_bytes(jpg_len)
-                notes_len, = unpack("!i", self.sock.recv(4))
-                notes = str.decode(self.read_bytes(notes_len),'utf-8')
-                f = cStringIO.StringIO()
-                f.write(slide_jpg)
-                f.seek(0)
-                slide = pygame.image.load(f, 'img.jpg')
-                f.close()
-                self.ui.set_slide(slide, notes)
+            while True:
+                pkt_type, len = unpack("!ii", self.sock.recv(8))
+                if pkt_type == PKT_CURRSLIDE and len > 4:
+                    page_number = unpack("!i", self.sock.recv(4))
+                    jpg_len, = unpack("!i", self.sock.recv(4))
+                    slide_jpg = self.read_bytes(jpg_len)
+                    notes_len, = unpack("!i", self.sock.recv(4))
+                    notes = str.decode(self.read_bytes(notes_len),'utf-8')
+                    f = cStringIO.StringIO()
+                    f.write(slide_jpg)
+                    f.seek(0)
+                    slide = pygame.image.load(f, 'img.jpg')
+                    f.close()
+                    self.ui.set_slide(slide, notes)
+        except:
+            print "Disconnected"
+            pygame.event.post(Event(pygame.QUIT))
 
     def connect(self):
         raise NotImplementedError
@@ -519,19 +523,46 @@ class DefaultUI(BaseUI):
 
         self.repaint_slide()
 
-    def get_lines(self, font, text, maxwidth):
+    def get_lines(self, font, fixed_font, text, maxwidth):
         lines = []
+        line_height = font.get_linesize()
+        line_height_fixed = fixed_font.get_linesize()
+        height = 0
+        
+        fixed_mode = False
         for line in text.split('\n'):
-            current_line = ""
-            for word in line.split(' '):
-                for x in range(len(word)):
-                    if font.size(current_line + word[:x+1])[0] > maxwidth:
+            
+            if not fixed_mode and line == '{':
+                fixed_mode = True
+                lines.append(line)
+                continue
+            if fixed_mode and line == '}':
+                fixed_mode = False
+                lines.append(line)
+                continue
+
+            if not fixed_mode:
+                current_line = ""
+                for word in line.split(' '):
+                    if font.size(current_line + word)[0] > maxwidth:
+                        #Split to a new line
+                        prev_line = current_line
                         lines.append(current_line)
+                        height = height + line_height
                         current_line = ""
-                        break
-                current_line = current_line + word + ' '
-            lines.append(current_line)
-        return lines
+                        #Keep identation
+                        for ident in prev_line:
+                            if ident in (' ', '-', '*'):
+                                current_line = current_line + " "
+                            else: break
+                    current_line = current_line + word + ' '
+                lines.append(current_line)
+                height = height + line_height
+            else:
+                lines.append(line)
+                height = height + line_height_fixed
+                    
+        return lines, height
 
     def paint_notes(self):
         screen_size = self.screen.get_size()
@@ -542,19 +573,33 @@ class DefaultUI(BaseUI):
                 self.font_size = self.screen.get_size()[1] / 12
                 
             font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
-            line_height = font.get_linesize()
+            fixed_font = pygame.font.SysFont("Fixed", size=self.font_size)
 
-            lines = self.get_lines(font, self.notes, screen_size[0] - (2*margin_x))
+            lines, total_height = self.get_lines(font, fixed_font, self.notes, screen_size[0] - (2*margin_x))
             self.notes_surface = pygame.Surface(
-                (screen_size[0] - (2*margin_x),line_height*len(lines)),
+                (screen_size[0] - (2*margin_x),total_height),
                 flags=pygame.HWSURFACE)
             self.notes_surface.set_colorkey((0,0,0), pygame.RLEACCEL)
 
             y  = 0
+            fixed_mode = False
+
             for line in lines:
-                line_surf = font.render(line, True, (255,255,255))
-                self.notes_surface.blit(line_surf, (0,y))
-                y = y + font.get_linesize()
+                if not fixed_mode and line == '{':
+                    fixed_mode = True
+                    continue
+                if fixed_mode and line == '}':
+                    fixed_mode = False
+                    continue
+                
+                if not fixed_mode:
+                    line_surf = font.render(line, True, (255,255,255))
+                    self.notes_surface.blit(line_surf, (0,y))
+                    y = y + font.get_linesize()
+                else:
+                    line_surf = fixed_font.render(line, True, (255,255,255))
+                    self.notes_surface.blit(line_surf, (0,y))
+                    y = y + fixed_font.get_linesize()
 
         self.screen.blit(self.notes_surface,(margin_x,margin_y + self.notes_offset))
 
