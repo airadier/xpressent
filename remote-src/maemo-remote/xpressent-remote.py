@@ -573,7 +573,7 @@ class DefaultUI(BaseUI):
                 self.font_size = self.screen.get_size()[1] / 12
                 
             font = pygame.font.SysFont("Helvetica, Sans, Arial", size=self.font_size)
-            fixed_font = pygame.font.SysFont("Fixed", size=self.font_size)
+            fixed_font = pygame.font.SysFont("Fixed, Monospace, Courier", size=self.font_size)
 
             lines, total_height = self.get_lines(font, fixed_font, self.notes, screen_size[0] - (2*margin_x))
             self.notes_surface = pygame.Surface(
