@@ -88,13 +88,15 @@ class Screen(object):
         pygame.display.flip()
         self.blit_lock.release()
 
-    def toggle_overlay(self):
-        self.paint_overlay = not self.paint_overlay
+    def toggle_overlay(self, show = None):
+        if show is None:
+            self.paint_overlay = not self.paint_overlay
+        else:
+            self.paint_overlay = show
 
     def draw(self, from_pos, to_pos):
         pygame.draw.line(self.overlay,
             (255,0,0), from_pos, to_pos, 5)
-        self.paint_overlay = True
 
     def clear_overlay(self):
         self.overlay.fill((0,0,0))
@@ -178,7 +180,6 @@ def run():
                 slide.repaint()
             else:
                 print 'Key', event.key
-            #pygame.event.clear(pygame.KEYUP)
         elif event.type == pygame.VIDEORESIZE:
             screen.change_size((event.w, event.h))
             slide.refresh()
@@ -186,7 +187,7 @@ def run():
             if event.button == 1:
                 prev_pos = event.pos
             elif event.button == 3:
-                screen.clear_overlay()
+                screen.toggle_overlay()
                 slide.repaint()
 
         elif event.type == pygame.MOUSEMOTION:
@@ -198,7 +199,10 @@ def run():
             repaint = False
             for ev in motions:
                 if ev.buttons[0]:
+                    if not screen.paint_overlay:
+                        screen.clear_overlay()
                     screen.draw(prev_pos, ev.pos)
+                    screen.toggle_overlay(True);
                     prev_pos = ev.pos
                     repaint = True
             if repaint or True: slide.repaint()

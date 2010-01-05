@@ -44,9 +44,8 @@ for config_path in (
     os.path.join('/etc', CONFIG_FILE),
     os.path.join(module_path, CONFIG_FILE)):
 
-    print config_path
     if os.path.exists(config_path): 
-        print "Reading: ",config_path
+        print "Reading:",config_path
         conf_file.read(config_path)
         break
 
