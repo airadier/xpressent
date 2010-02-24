@@ -3,8 +3,6 @@ package aimnet.android.xpressent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Vector;
@@ -30,7 +28,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnTouchListener;
-import android.widget.RemoteViews.ActionException;
 
 class BaseClient extends Thread
 {
@@ -44,20 +41,20 @@ class BaseClient extends Thread
 	static final int PKT_NEXTSLIDE = 3;
 	static final int PKT_PREVSLIDE = 4;
 	
-	public BaseClient(XPressent manager, Socket sock) {
+	DataInputStream is;
+	DataOutputStream os;	
+	
+	public BaseClient(XPressent manager, DataInputStream inStream, DataOutputStream outStream) {
 		this.manager = manager;
-		this.sock = sock;
+		this.is = inStream;
+		this.os = outStream;
 	}
 	
 	@Override
 	public void run() {
-		DataInputStream is;
-		DataOutputStream os;
 		
 		try {
-		is = new DataInputStream(sock.getInputStream());
-		os = new DataOutputStream(sock.getOutputStream());
-		
+			
 			os.writeInt(PROT_VERSION);
 			os.writeInt(PKT_HELLO);
 			os.writeInt(8);
@@ -118,6 +115,8 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     
     static final int DIALOG_SELECTSERVER_ID = 0;
     static final int DIALOG_CONNECTION_ERROR = 1;
+    static final int DIALOG_ERROR = 2;
+
     
 	static final int PKT_KEYPRESS = 1;    
     
@@ -127,11 +126,13 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     
     Bitmap currSlide;
     Bitmap currNotes;
-    int notesOffset;
+    float notesOffset;
+    float slideOffset;
     boolean showNotes = false;
+    String errorMsg;
     
     /* TODO: Remove */
-    final CharSequence[] servers = {"BT: xx:xx:xx:xx:xx", "10.13.4.3:48151", "10.10.3.3:48151", "Enter IP Address"};
+    final CharSequence[] servers = {"10.13.4.3:48151", "10.10.3.3:48151", "Search BT Device", "Enter IP Address"};
 
     /* The socket that connects to the xpressent server */
 	Socket sock;
@@ -154,10 +155,10 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     	
     	Paint pAlpha = new Paint();
     	pAlpha.setAlpha(this.showNotes ? 50 : 255);
-    	c.drawBitmap(this.currSlide, 0, 0, pAlpha);
+    	c.drawBitmap(this.currSlide, 0 - this.slideOffset, 0, pAlpha);
     	
     	if (this.currNotes != null && this.showNotes) 
-    		c.drawBitmap(this.currNotes, 10, 10 - this.notesOffset, null);
+    		c.drawBitmap(this.currNotes, 5, 5 - this.notesOffset, null);
     	    	
     	holder.unlockCanvasAndPost(c);    	
     }
@@ -165,7 +166,8 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     public void slideChanged(int page_number, Bitmap slide, String notes)
     {
     	
-		this.notesOffset = 0;
+		this.notesOffset = 0.0f;
+		this.slideOffset = 0.0f;
 		this.currSlide = slide;
 		this.showNotes = false;
 				
@@ -177,21 +179,33 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 	    	p.setColor(Color.WHITE);
 	    	p.setTextAlign(Align.LEFT);
 	    	p.setTypeface(Typeface.DEFAULT);
-	    	p.setTextSize(16.0f);
+	    	p.setAntiAlias(true);
+	    	p.setTextSize(15.0f);
 					
 			for (String line : l) {
-				String currLine = line;
+
+				String currLine = "";
+				String[] words = line.split(" ");					
+				for(String word: words)
+				{
+					int chars = p.breakText(currLine + " " + word, true, 310.0f, null);
+					if (chars < (currLine + " " + word).length()) 
+					{
+						lines.add(currLine);
+						currLine = word;
+					}
+					else currLine += " " + word;
+				}
 				
-				while (currLine.length() > 0) {
-					int chars = p.breakText(currLine, true, 300.0f, null);			
-					lines.add(currLine.substring(0, chars));
-					currLine = currLine.substring(chars);
+				if (currLine.length() > 0)
+				{
+					lines.add(currLine);
 				}
 						
 	
-			}    
-	
-			this.currNotes = Bitmap.createBitmap(300, (int)((lines.size() + 1) * p.getFontMetrics(null)), Bitmap.Config.ARGB_8888);
+			}
+			
+			this.currNotes = Bitmap.createBitmap(310, (int)(((float)lines.size() + 3.0f) * p.getFontMetrics(null)), Bitmap.Config.ARGB_8888);
 			Canvas c = new Canvas(this.currNotes);
 			
 			int y = 0;
@@ -216,13 +230,18 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 		String[] serverParts;
 		
 		dialog.dismiss();
+		
 		removeDialog(DIALOG_SELECTSERVER_ID);
 		
 		serverParts = servers[which].toString().split(":");
 				
 		try {
 			sock = new Socket(serverParts[0], Integer.parseInt(serverParts[1]));
-			Thread runThread = new BaseClient(this, sock);
+
+			DataInputStream is = new DataInputStream(sock.getInputStream());
+			DataOutputStream os = new DataOutputStream(sock.getOutputStream());
+			
+			Thread runThread = new BaseClient(this, is, os);
 						
 			runThread.start();
 			
@@ -292,6 +311,7 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     	super.onResume();
     }    
     
+    
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		Dialog dialog;
@@ -312,6 +332,14 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 				builder.setMessage("Connection error");
 				dialog = builder.create();
 				break;
+
+			case DIALOG_ERROR:
+				builder = new AlertDialog.Builder(this);
+				
+				builder.setMessage("Error: " + this.errorMsg);
+				dialog = builder.create();
+				break;
+				
 				
 			default:
 				dialog = null;
@@ -374,37 +402,35 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 
 	}
 	
-	float startX;
+	float startX, prevY, yMov;
 	
 	public boolean onTouch(View v, MotionEvent event) {
 		
 		if (event.getAction() == MotionEvent.ACTION_DOWN)
 		{
 			startX = event.getX();
+			prevY = event.getY();
+			yMov = 0;
 			return true;
 		}
 		
-		if (event.getAction() == MotionEvent.ACTION_UP && 
-				(event.getEventTime() - event.getDownTime()) < 500)
+		if (event.getAction() == MotionEvent.ACTION_UP)
 		{
 
 			
-			if ((startX - event.getX()) > 50) 
-			{
-				this.sendKeyPress(281);	
-				return true;
+			this.slideOffset = 0;
+			if  (event.getEventTime() - event.getDownTime() < 500) {			
+				if ((startX - event.getX()) > 160) 
+				{
+					this.sendKeyPress(281);	
+				}
+				else if ((event.getX() - startX) > 160) 
+				{
+					this.sendKeyPress(280);
+				}
+				else if (Math.abs(event.getX() - startX) < 16 && yMov < 16)
+					this.showNotes = !this.showNotes;
 			}
-			else if ((event.getX() - startX) > 50) 
-			{
-				this.sendKeyPress(280);
-				return true;				
-			}
-		}
-
-		if (event.getAction() == MotionEvent.ACTION_UP && 
-				(event.getEventTime() - event.getDownTime()) < 250) 
-		{
-			this.showNotes = !this.showNotes;
 			this.repaintSlide();
 			return true;
 		}
@@ -412,19 +438,21 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 		
 		if (event.getAction() == MotionEvent.ACTION_MOVE)
 		{
-			if (event.getHistorySize()> 0) {
-				this.notesOffset += event.getHistoricalY(event.getHistorySize()-1) - event.getY();
-				
-				if (this.notesOffset < 0) {
-					this.notesOffset = 0;
-				}
-				else if (this.currNotes != null && this.notesOffset > this.currNotes.getHeight())
-				{
-					this.notesOffset = this.currNotes.getHeight();
-				}
-
-				this.repaintSlide();
+			this.slideOffset = startX - event.getX();
+			yMov += Math.abs(prevY - event.getY());
+			this.notesOffset += prevY - event.getY();
+			prevY = event.getY();
+			
+			if (this.currNotes != null && this.notesOffset > (this.currNotes.getHeight() - 420))
+			{
+				this.notesOffset = this.currNotes.getHeight() - 420;
 			}
+			if (this.notesOffset < 0) {
+				this.notesOffset = 0;
+			}
+			
+			
+			this.repaintSlide();
 			
 		}
 
