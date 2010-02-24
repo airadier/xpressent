@@ -131,7 +131,7 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
     boolean showNotes = false;
     
     /* TODO: Remove */
-    final CharSequence[] servers = {"BT: xx:xx:xx:xx:xx", "10.13.4.3:48151", "Enter IP Address"};
+    final CharSequence[] servers = {"BT: xx:xx:xx:xx:xx", "10.13.4.3:48151", "10.10.3.3:48151", "Enter IP Address"};
 
     /* The socket that connects to the xpressent server */
 	Socket sock;
@@ -374,24 +374,42 @@ public class XPressent extends Activity implements DialogInterface.OnClickListen
 
 	}
 	
+	float startX;
+	
 	public boolean onTouch(View v, MotionEvent event) {
-		if (event.getAction() == MotionEvent.ACTION_UP)
+		
+		if (event.getAction() == MotionEvent.ACTION_DOWN)
 		{
-			if (event.getEdgeFlags() == MotionEvent.EDGE_LEFT) 
+			startX = event.getX();
+			return true;
+		}
+		
+		if (event.getAction() == MotionEvent.ACTION_UP && 
+				(event.getEventTime() - event.getDownTime()) < 500)
+		{
+
+			
+			if ((startX - event.getX()) > 50) 
 			{
 				this.sendKeyPress(281);	
+				return true;
 			}
-			else if (event.getEdgeFlags() == MotionEvent.EDGE_RIGHT) 
+			else if ((event.getX() - startX) > 50) 
 			{
 				this.sendKeyPress(280);
-				
-			}
-			else if ((event.getEventTime() - event.getDownTime()) < 250) 
-			{
-				this.showNotes = !this.showNotes;
-				this.repaintSlide();
+				return true;				
 			}
 		}
+
+		if (event.getAction() == MotionEvent.ACTION_UP && 
+				(event.getEventTime() - event.getDownTime()) < 250) 
+		{
+			this.showNotes = !this.showNotes;
+			this.repaintSlide();
+			return true;
+		}
+		
+		
 		if (event.getAction() == MotionEvent.ACTION_MOVE)
 		{
 			if (event.getHistorySize()> 0) {
