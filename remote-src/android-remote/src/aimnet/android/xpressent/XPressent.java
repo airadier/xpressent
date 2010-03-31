@@ -211,7 +211,7 @@ public class XPressent extends Activity implements
 			this.errorMsg = "Unknown host";
 			showDialog(DIALOG_CONNECTION_ERROR);
 		} catch (IOException e) {
-			this.errorMsg = "I/O Exception";
+			this.errorMsg = "I/O Exception: " + e.getLocalizedMessage();
 			showDialog(DIALOG_CONNECTION_ERROR);
 		} catch (Exception e) {
 			this.errorMsg = e.getLocalizedMessage();
