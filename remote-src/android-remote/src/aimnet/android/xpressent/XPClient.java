@@ -35,13 +35,14 @@ public class XPClient extends Thread
 		
 		try {
 			
+			/* Send server greeting */
 			os.writeInt(PROT_VERSION);
 			os.writeInt(PKT_HELLO);
 			os.writeInt(8);
 			os.writeInt(320);
 			os.writeInt(480);
-			os.flush();
 			
+			/* Check greet from server */
 			if (
 				is.readInt() > PROT_VERSION ||
 				is.readInt() != PKT_HELLO ||
@@ -50,7 +51,7 @@ public class XPClient extends Thread
 		}
 		catch (Exception ex)
 		{
-			manager.connectionLost();
+			manager.connectionLost(ex.getMessage());
 			return;
 		}
 		
@@ -84,7 +85,7 @@ public class XPClient extends Thread
 			} 
 			catch (Exception ex)
 			{
-				this.manager.connectionLost();
+				this.manager.connectionLost(ex.getMessage());
 				return;
 			}
 		}
@@ -92,18 +93,20 @@ public class XPClient extends Thread
 	
 	public void sendKeyPress(int value)
 	{
-		try {
+		try
+		{
 			os.writeInt(PKT_KEYPRESS);
 			os.writeInt(4);
 			os.writeInt(value);
 		}
 		catch (Exception ex)
 		{
-			try {
+			try
+			{
 				this.sock.close();
 			} catch (Exception e) {}
-			manager.connectionLost();
-		
+			
+			manager.connectionLost(ex.getMessage());
 		}
 
 	}
