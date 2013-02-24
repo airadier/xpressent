@@ -93,7 +93,6 @@ class RemoteBase(Thread):
                 client.send_slide(slide_jpg, notes.encode('utf-8'), page_number)
             except IOError:
                 pass
-                #client.close()
         self.thread_lock.release()
 
         #Save current data for other clients
@@ -159,7 +158,7 @@ class XProtocol(Thread):
         data = ""
         while len(data) < amount:
             new_data = self.client.recv(amount-len(data))
-            if not new_data: 
+            if not new_data:
                 raise IOError("Read error")
             data = data + new_data
         return data
