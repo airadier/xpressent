@@ -3,7 +3,9 @@ package aimnet.android.xpressent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.Vector;
 
@@ -26,6 +28,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.widget.EditText;
 
 public class XPressent extends Activity implements
 		DialogInterface.OnClickListener, OnTouchListener {
@@ -33,6 +36,7 @@ public class XPressent extends Activity implements
 	static final int DIALOG_SELECTSERVER_ID = 0;
 	static final int DIALOG_CONNECTION_ERROR = 1;
 	static final int DIALOG_ERROR = 2;
+	static final int DIALOG_ENTER_IP = 3;
 
 	static final int PKT_KEYPRESS = 1;
 
@@ -53,10 +57,12 @@ public class XPressent extends Activity implements
 	float startX, prevY, yMov;
 	float fontSize = 15.0f;
 	int windowWidth, windowHeight;
+	
+	SurfaceView surfaceView;
 
 	/* TODO: Remove */
-	final CharSequence[] servers = { "10.13.4.3:48151", "10.10.3.3:48151",
-			"Search BT Device", "Enter IP Address" };
+	final CharSequence[] servers = { "Enter IP Address", "Search BT Device",
+		"192.168.43.2:48151", "10.13.4.3:48151", "10.10.3.3:48151" };
 
 	/* The socket that connects to the xpressent server */
 	Socket sock;
@@ -112,38 +118,34 @@ public class XPressent extends Activity implements
 	}
 
 	protected void repaintSlide() {
-
-		if (this.currSlide == null) return;
 		
 		/* Get canvas for window surface */
-		SurfaceView surfaceView = (SurfaceView) findViewById(R.id.SurfaceView01);
 		SurfaceHolder holder = surfaceView.getHolder();
 		Canvas c = holder.lockCanvas();
+		c.drawColor(Color.BLACK);
 
-		/* Get the current with and height */
-		this.windowWidth = c.getWidth();
-		this.windowHeight = c.getHeight();
-
-		/* If notes are not painted, repaint them */
-		if (this.currNotes == null)
-			this.repaintNotes();
-
-		Paint pClear = new Paint();
-		pClear.setColor(Color.BLACK);
-		c.drawRect(0, 0, c.getWidth(), c.getHeight(), pClear);
-
-		Paint pAlpha = new Paint();
-		pAlpha.setAlpha(this.showNotes ? 60 : 255);
-		c.drawBitmap(this.currSlide, 0 - this.slideOffset,
-				(c.getHeight() - this.currSlide.getHeight()) / 2, pAlpha);
-
-		if (this.currNotes != null && this.showNotes)
-			c.drawBitmap(this.currNotes, 5, 5 - this.notesOffset, null);
+		if (this.currSlide != null) {
+			/* Get the current with and height */
+			this.windowWidth = c.getWidth();
+			this.windowHeight = c.getHeight();
+	
+			/* If notes are not painted, repaint them */
+			if (this.currNotes == null)
+				this.repaintNotes();
+	
+			Paint pAlpha = new Paint();
+			pAlpha.setAlpha(this.showNotes ? 60 : 255);
+			c.drawBitmap(this.currSlide, 0 - this.slideOffset,
+					(c.getHeight() - this.currSlide.getHeight()) / 2, pAlpha);
+	
+			if (this.currNotes != null && this.showNotes)
+				c.drawBitmap(this.currNotes, 5, 5 - this.notesOffset, null);
+		}
 
 		holder.unlockCanvasAndPost(c);
 	}
 
-	public void moveNotes(float offset) {
+	protected void moveNotes(float offset) {
 		this.notesOffset += offset;
 
 		if (this.currNotes != null
@@ -156,6 +158,40 @@ public class XPressent extends Activity implements
 
 		this.repaintSlide();
 
+	}
+	
+	protected void connectXPressent(String hostAndPort) {
+		try {
+			String[] serverParts = hostAndPort.split(":");
+			String host = serverParts[0];
+			int port = Integer.parseInt(serverParts[1]);
+
+			sock = new Socket();
+			SocketAddress addr = new InetSocketAddress(host, port);
+			sock.connect(addr, 3000);
+
+			DataInputStream is = new DataInputStream(sock.getInputStream());
+			DataOutputStream os = new DataOutputStream(sock.getOutputStream());
+
+			xpClient = new XPClient(this, is, os);
+			xpClient.start();					
+		} catch (NumberFormatException e) {
+			this.errorMsg = "Wrong address";
+			this.sock = null;
+			showDialog(DIALOG_ERROR);
+		} catch (UnknownHostException e) {
+			this.errorMsg = "Unknown host";
+			this.sock = null;
+			showDialog(DIALOG_CONNECTION_ERROR);
+		} catch (IOException e) {
+			this.errorMsg = "I/O Exception: " + e.getLocalizedMessage();
+			this.sock = null;
+			showDialog(DIALOG_CONNECTION_ERROR);
+		} catch (Exception e) {
+			this.errorMsg = e.getLocalizedMessage();
+			this.sock = null;
+			showDialog(DIALOG_ERROR);
+		}
 	}
 
 	// /////////////////////////////////////////////////////
@@ -176,10 +212,18 @@ public class XPressent extends Activity implements
 
 	}
 
-	public void connectionLost(String msg) {
-		this.errorMsg = msg;
-		showDialog(DIALOG_CONNECTION_ERROR);
+	public void connectionLost(final String msg) {
 		this.sock = null;
+		this.xpClient = null;
+		this.currSlide = null;
+		runOnUiThread(new Runnable() {			
+			@Override
+			public void run() {
+				errorMsg = msg;
+				showDialog(DIALOG_CONNECTION_ERROR);
+				surfaceView.invalidate();
+			}
+		});
 	}
 
 	// /////////////////////////////////////////////////////
@@ -188,36 +232,16 @@ public class XPressent extends Activity implements
 
 	public void onClick(DialogInterface dialog, int which) {
 
-		String[] serverParts;
 		dialog.dismiss();
 		removeDialog(DIALOG_SELECTSERVER_ID);
-
-		try {
-			serverParts = servers[which].toString().split(":");
-			
-			sock = new Socket(serverParts[0], Integer.parseInt(serverParts[1]));
-
-			DataInputStream is = new DataInputStream(sock.getInputStream());
-			DataOutputStream os = new DataOutputStream(sock.getOutputStream());
-
-			xpClient = new XPClient(this, is, os);
-
-			xpClient.start();
-
-		} catch (NumberFormatException e) {
-			this.errorMsg = "Wrong address";
-			showDialog(DIALOG_ERROR);
-		} catch (UnknownHostException e) {
-			this.errorMsg = "Unknown host";
-			showDialog(DIALOG_CONNECTION_ERROR);
-		} catch (IOException e) {
-			this.errorMsg = "I/O Exception: " + e.getLocalizedMessage();
-			showDialog(DIALOG_CONNECTION_ERROR);
-		} catch (Exception e) {
-			this.errorMsg = e.getLocalizedMessage();
-			showDialog(DIALOG_ERROR);
+		if (which == 0) {
+			//Enter IP address
+			showDialog(DIALOG_ENTER_IP);
+		} else if (which == 1) {
+			// Search BT Device
+		} else {
+			connectXPressent(servers[which].toString());
 		}
-
 	}
 
 	// /////////////////////////////////////////////////////
@@ -239,10 +263,10 @@ public class XPressent extends Activity implements
 			if (event.getEventTime() - event.getDownTime() < 500) {
 				if ((startX - event.getX()) > (this.windowWidth / 2)) {
 					if (xpClient != null) xpClient.sendKeyPress(281);
-					this.currSlide = null;
+					//this.currSlide = null;
 				} else if ((event.getX() - startX) > (this.windowWidth / 2)) {
 					if (xpClient != null) xpClient.sendKeyPress(280);
-					this.currSlide = null;
+					//this.currSlide = null;
 				} else if (Math.abs(event.getX() - startX) < (this.windowWidth / 20)
 						&& yMov < (this.windowHeight / 20)) {
 					this.showNotes = !this.showNotes;
@@ -274,8 +298,7 @@ public class XPressent extends Activity implements
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-
-		SurfaceView surfaceView = (SurfaceView) findViewById(R.id.SurfaceView01);
+		this.surfaceView = (SurfaceView) findViewById(R.id.SurfaceView01);
 		surfaceView.setOnTouchListener(this);
 
 		sock = null;
@@ -289,11 +312,6 @@ public class XPressent extends Activity implements
 	@Override
 	protected void onStart() {
 		super.onStart();
-
-		if (sock == null) {
-			showDialog(DIALOG_SELECTSERVER_ID);
-		}
-
 	}
 
 	@Override
@@ -304,17 +322,8 @@ public class XPressent extends Activity implements
 	@Override
 	protected void onStop() {
 		super.onStop();
-
-		if (this.sock != null) {
-			try {
-				if (this.sock != null)
-					this.sock.close();
-			} catch (Exception e) {
-			}
-			sock = null;
-		}
 	}
-
+	
 	@Override
 	public void finish() {
 		super.finish();
@@ -351,6 +360,21 @@ public class XPressent extends Activity implements
 			dialog = builder.create();
 			break;
 
+		case DIALOG_ENTER_IP:
+			builder = new AlertDialog.Builder(this);
+			builder.setTitle("Enter IP Address");
+			builder.setMessage("Enter server:port");
+			final EditText input = new EditText(this);
+			builder.setView(input);	
+			builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+					String value = input.getText().toString();
+					connectXPressent(value);
+				}
+			});		
+			dialog = builder.create();
+			break;
+			
 		default:
 			dialog = null;
 
@@ -386,6 +410,9 @@ public class XPressent extends Activity implements
 			} catch (Exception e) {
 			}
 			this.sock = null;
+			this.xpClient = null;
+			this.currSlide = null;
+			this.surfaceView.invalidate();
 			return true;
 		case MENU_PREV:
 			if (xpClient != null) xpClient.sendKeyPress(280);			
