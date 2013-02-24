@@ -44,7 +44,7 @@ class PDFManagerBase(object):
                 dest_w = render_h * page_ratio
         else:
             dest_w, dest_h = render_w, render_h
-        
+
         return int(dest_w), int(dest_h)
 
     def get_num_pages(self):
@@ -55,7 +55,7 @@ class PDFManagerBase(object):
 
     def render_page(self, page_num, size):
         return None
-        
+
 
 class PopplerPDFManager(PDFManagerBase):
 
@@ -65,20 +65,17 @@ class PopplerPDFManager(PDFManagerBase):
 
     def get_num_pages(self):
         return self.doc.get_n_pages()
-        
+
 
     def render_page(self, page_num, size):
 
         page = self.doc.get_page(page_num)
         page_w, page_h = page.get_size()
-        
-        dest_w, dest_h = self.get_render_size(size, (page_w, page_h))        
+
+        dest_w, dest_h = self.get_render_size(size, (page_w, page_h))
 
         img = cairo.ImageSurface(cairo.FORMAT_RGB24, dest_w, dest_h)
         context = cairo.Context(img)
-        #context.translate(
-        #    int((render_w - dest_w)/2),
-        #    int((render_h - dest_h)/2))
         context.scale(dest_w/page_w, dest_h/page_h)
         context.set_source_rgb(1.0, 1.0, 1.0)
         context.rectangle(0, 0, page_w, page_h)
@@ -88,19 +85,19 @@ class PopplerPDFManager(PDFManagerBase):
         img.write_to_png(f)
         f.seek(0)
         return pygame.image.load(f, 'img.png');
-        
+
 
 class XPDFManager(PDFManagerBase):
-    
+
     def __init__(self, pdf_file, quality):
         PDFManagerBase.__init__(self, pdf_file, quality)
-        
+
         f = open(pdf_file, "r")
         signature = f.read(4).lower()
         f.close()
         if signature != '%pdf':
             raise Exception("%s is not a PDF file" % pdf_file)
-                
+
         if not config.xpdfpath:
             self.xpdfpath = ''
         elif os.path.isabs(config.xpdfpath):
@@ -109,33 +106,33 @@ class XPDFManager(PDFManagerBase):
             self.xpdfpath = os.path.join(
                 os.path.dirname(inspect.getabsfile(sys.modules[__name__])),
                 config.xpdfpath)
-        
+
         self.pdfinfoexe = os.path.join(self.xpdfpath, 'pdfinfo')
         self.pdftoppmexe = os.path.join(self.xpdfpath, 'pdftoppm')
-        
+
         pipe = Popen((self.pdfinfoexe, pdf_file),
             stdout=PIPE, stderr=PIPE, universal_newlines = True)
         pipe.wait()
         info_lines = pipe.stdout.read().splitlines()
         errors = pipe.stderr.read()
-        
+
         if errors:
             raise Exception, errors
-        
+
         self.pdf_info = {}
         for line in info_lines:
             key = line[:line.find(':')]
             self.pdf_info[key] = line[line.find(':') + 1:].lstrip()
-        
-        
+
+
         page_size = self.pdf_info['Page size'].split()
         self.page_size = (int(page_size[0]), int(page_size[2]))
 
     def get_num_pages(self):
-        return int(self.pdf_info['Pages'])    
-    
+        return int(self.pdf_info['Pages'])
+
     def render_page(self, page_num, size):
-        
+
         dest_w, dest_h = self.get_render_size(size, self.page_size)
 
         res = int((dest_w * 72) / self.page_size[0])
@@ -152,7 +149,7 @@ class XPDFManager(PDFManagerBase):
         img = pygame.image.load(tmpfile)
         os.unlink(tmpfile)
         return img
-    
+
 
 PDFManager = None
 if config.pdflib == 'poppler':
