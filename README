@@ -1,3 +1,82 @@
-See more info at:
+# xPressent
 
-https://devel.otcs.es/projects/xpressent/wiki
+PDF slide presentations + remote display and control
+
+You can run source without compilation, just install dependencies.
+Official releases coming soon.
+
+
+## Requirements
+
+
+* Poppler PDF library: Poppler [http://poppler.freedesktop.org/":https://devel.airadier.com/svn/xpressent/trunk/src]).  and _python-poppler_ "* Alternatively, If you don't have Poppler and python-poppler, you can use _pdftopng_ and _pdfinfo_ from XPDF (works on windows too)
+* python-pygame
+* python-bluez
+* pycairo
+* PIL (Python Imaging Library)
+
+## Usage
+
+
+TO-DO
+
+
+----
+
+
+
+# xPressent for Android
+
+WIP
+
+Note that IP address are fixed in code and bluetooth support is not yet available.
+
+----
+
+
+# xPressent Maemo
+
+
+The remote controller for Nokia Maemo devices (N770 / N800 / N810).
+
+Get /remote-src/maemo-remote source (runs without installation).
+
+* Python 2.5
+* python-pygame
+* python-imaging (PIL - Python Imaging Library)
+
+
+## Usage
+
+
+TO-DO
+
+----
+
+
+#xPressent for Windows Mobile
+
+
+Remote controller for Windows Mobile devices (targeted for Compact.NET framework)
+
+You can checkout source. More info coming soon.
+
+
+## Requirements for xPressent for Windows Mobile
+
+* A bluetooth enabled Windows Mobile device
+* Compact.NET Framework 2.0
+
+
+## Usage
+
+
+TO-DO
+
+----
+
+
+# xPressent for J2ME (Java Microedition)
+
+
+Coming soon!
